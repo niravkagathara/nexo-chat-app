@@ -1,0 +1,14 @@
+{
+  "name": "nexo-chat-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx -y concurrently -n \"backend,frontend\" -c \"magenta,cyan\" \"npm run start:dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "desktop:icons": "python desktop/build-icons.py",
+    "desktop:install": "npm install --prefix desktop",
+    "desktop:dev": "npm start --prefix desktop",
+    "desktop:build": "npm run build --prefix desktop",
+    "desktop:pack": "npm run desktop:icons && npm run desktop:install && npm run desktop:build && node desktop/copy-build.js"
+  }
+}

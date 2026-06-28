@@ -1,0 +1,54 @@
+{
+  "name": "nexo-chat-desktop",
+  "version": "1.0.0",
+  "description": "Desktop application for Nexo Chat",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.nexozone.nexochat",
+    "productName": "Nexo Chat",
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "target": ["dmg", "zip"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nexo Chat",
+      "uninstallDisplayName": "Nexo Chat",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": true
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "build/**/*"
+    ]
+  }
+}

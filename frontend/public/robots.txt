@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Allow major search engine crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Disallow authenticated/private areas
+Disallow: /chat
+Disallow: /admin
+Disallow: /auth/
+
+# Sitemap
+Sitemap: https://nexochat.in/sitemap.xml

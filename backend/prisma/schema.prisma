@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                Int           @id @default(autoincrement())
+  email             String        @unique
+  name              String
+  password          String?
+  googleId          String?       @unique
+  avatarUrl         String?
+  status            String        @default("online")
+  statusMessage     String?
+  role              String        @default("user")
+  resetCode         String?
+  resetCodeExpiry   DateTime?
+  createdAt         DateTime      @default(now())
+  messages          Message[]
+  rooms             Participant[]
+}
+
+model Room {
+  id           Int           @id @default(autoincrement())
+  name         String?
+  isGroup      Boolean       @default(false)
+  dmStatus     String        @default("accepted")
+  dmRequesterId Int?
+  avatarUrl    String?
+  createdAt    DateTime      @default(now())
+  messages     Message[]
+  participants Participant[]
+  callSessions CallSession[]
+}
+
+model Participant {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  roomId   Int
+  isAdmin  Boolean  @default(false)
+  isMuted  Boolean  @default(false)
+  isPinned Boolean  @default(false)
+  lastReadAt DateTime @default(now())
+  joinedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roomId])
+}
+
+model Message {
+  id          Int          @id @default(autoincrement())
+  content     String
+  isPinned    Boolean      @default(false)
+  isEdited    Boolean      @default(false)
+  isDeleted   Boolean      @default(false)
+  parentId    Int?
+  createdAt   DateTime     @default(now())
+  userId      Int
+  roomId      Int
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room        Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+  reactions   Reaction[]
+  parent      Message?     @relation("MessageReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Message[]    @relation("MessageReplies")
+}
+
+model Attachment {
+  id        Int     @id @default(autoincrement())
+  fileName  String
+  fileType  String
+  fileUrl   String
+  fileSize  Int
+  messageId Int
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Reaction {
+  id        Int     @id @default(autoincrement())
+  emoji     String
+  userId    Int
+  messageId Int
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId, emoji])
+}
+
+model CallSession {
+  id           Int      @id @default(autoincrement())
+  roomId       Int
+  callerId     Int
+  callerName   String
+  participants String   @default("[]")
+  duration     Int      @default(0)
+  status       String
+  endedAt      DateTime?
+  createdAt    DateTime @default(now())
+  room         Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model RolePermission {
+  id      Int     @id @default(autoincrement())
+  role    String  // e.g. "admin", "user"
+  action  String  // e.g. "manage_users", "manage_rooms", "manage_files", "trigger_backup"
+  allowed Boolean @default(false)
+
+  @@unique([role, action])
+}
+
+

@@ -1,0 +1,21 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/generated/prisma
+
+# Compiled output
+/dist
+
+# User uploads
+/public/uploads
+
+# Credentials and databases
+google-service-account.json
+dev.db
+*.db
+*.db-journal
+
+# Temporary / test files
+test_exclude.tar.gz
+*.tar.gz
