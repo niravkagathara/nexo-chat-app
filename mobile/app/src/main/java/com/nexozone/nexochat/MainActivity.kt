@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Load Nexo Chat URL (change to production URL if deployed)
-        val appUrl = "http://10.0.2.2:3000" // Default to Android emulator accessing localhost
+        val appUrl = "https://www.nexochat.in" // Production hosted URL
         // For local development on a real device, the user should change this to their local IP (e.g. http://192.168.x.x:3000)
         webView.loadUrl(appUrl)
     }

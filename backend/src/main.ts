@@ -17,7 +17,8 @@ async function bootstrap() {
   const uploadPath = join(process.cwd(), 'public', 'uploads');
   app.use('/uploads', express.static(uploadPath));
 
-  await app.listen(3001);
-  console.log('Nexo Chat Backend running on http://localhost:3001');
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Nexo Chat Backend running on http://localhost:${port}`);
 }
 bootstrap();

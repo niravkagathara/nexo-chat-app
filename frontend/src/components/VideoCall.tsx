@@ -409,7 +409,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   const renderCallAvatar = (avatarUrl: string | null, name: string, sizeClass: string) => {
     const initials = getInitials(name);
     const isUrl = avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/') || avatarUrl.includes('.'));
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.nexochat.in';
 
     if (isUrl) {
       return (

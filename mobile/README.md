@@ -26,6 +26,6 @@ This directory contains the native Android WebView application for Nexo Chat.
 ### Development Configuration
 By default, the WebView is configured to load:
 ```kotlin
-val appUrl = "http://10.0.2.2:3000" // Emulator accessing localhost
+val appUrl = "https://www.nexochat.in" // Production hosted URL
 ```
 If you are running the app on a real Android device, make sure your device is connected to the same Wi-Fi network and change this IP address to your computer's local IP address (e.g., `http://192.168.1.100:3000`). For production, replace it with your public URL.

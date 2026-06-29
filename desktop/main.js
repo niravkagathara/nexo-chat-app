@@ -26,7 +26,7 @@ function createWindow() {
   });
 
   // Load the web app URL. Defaults to local server, but can be overridden with env APP_URL.
-  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  const appUrl = process.env.APP_URL || 'https://www.nexochat.in';
   mainWindow.loadURL(appUrl);
 
   // Setup application menu with keyboard shortcuts (Reload, Copy/Paste, DevTools)
@@ -70,7 +70,7 @@ function createWindow() {
 
   // Intercept new window requests (e.g. target="_blank" links)
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http://localhost') || url.startsWith('https://chat.nexozone') || url.startsWith('https://www.figma.com')) {
+    if (url.startsWith('http://localhost') || url.startsWith('https://www.nexochat.in') || url.startsWith('https://api.nexochat.in') || url.startsWith('https://www.figma.com')) {
       return { action: 'allow' };
     }
     // Open in system browser

@@ -552,8 +552,8 @@ export default function LandingPage() {
             '@graph': [
               {
                 '@type': 'WebApplication',
-                '@id': 'https://nexochat.in/#webapp',
-                'url': 'https://nexochat.in',
+                '@id': 'https://www.nexochat.in/#webapp',
+                'url': 'https://www.nexochat.in',
                 'name': 'Nexo Chat',
                 'applicationCategory': 'BusinessApplication',
                 'operatingSystem': 'All',
@@ -571,7 +571,7 @@ export default function LandingPage() {
                 '@id': 'https://nexozone.in/#organization',
                 'name': 'NexoZone',
                 'url': 'https://nexozone.in',
-                'logo': 'https://nexochat.in/logo-icon.png',
+                'logo': 'https://www.nexochat.in/logo-icon.png',
                 'sameAs': [
                   'https://twitter.com/nexozone',
                   'https://www.linkedin.com/company/nexozone',

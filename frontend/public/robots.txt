@@ -14,4 +14,4 @@ Disallow: /admin
 Disallow: /auth/
 
 # Sitemap
-Sitemap: https://nexochat.in/sitemap.xml
+Sitemap: https://www.nexochat.in/sitemap.xml

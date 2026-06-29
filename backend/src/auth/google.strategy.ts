@@ -9,7 +9,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID: config.get<string>('GOOGLE_CLIENT_ID') || 'placeholder',
       clientSecret: config.get<string>('GOOGLE_CLIENT_SECRET') || 'placeholder',
-      callbackURL: config.get<string>('GOOGLE_CALLBACK_URL') || 'http://localhost:3001/auth/google/callback',
+      callbackURL: config.get<string>('GOOGLE_CALLBACK_URL') || 'https://api.nexochat.in/auth/google/callback',
       scope: ['email', 'profile'],
     });
   }

@@ -7,7 +7,7 @@ import {
   Eye, EyeOff, Mail, Lock, User, CheckCircle2, XCircle, AlertCircle,
 } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.nexochat.in';
 
 type Mode = 'login' | 'register' | 'forgot' | 'reset';
 

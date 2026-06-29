@@ -26,7 +26,7 @@ import {
   Filter,
 } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.nexochat.in';
 
 type Tab = 'overview' | 'users' | 'rooms' | 'files' | 'calls' | 'permissions';
 

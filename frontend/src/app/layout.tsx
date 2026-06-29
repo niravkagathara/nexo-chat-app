@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const APP_URL = "https://nexochat.in";
+const APP_URL = "https://www.nexochat.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
