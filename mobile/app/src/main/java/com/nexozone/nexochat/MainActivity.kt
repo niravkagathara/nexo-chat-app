@@ -37,6 +37,13 @@ class MainActivity : AppCompatActivity() {
         webView.settings.domStorageEnabled = true
         webView.settings.mediaPlaybackRequiresUserGesture = false
 
+        // Override User-Agent to bypass Google's "disallowed_useragent" policy in WebViews
+        val defaultUserAgent = webView.settings.userAgentString
+        val customUserAgent = defaultUserAgent
+            .replace("; wv)", ")")
+            .replace("Version/\\d+\\.\\d+\\s+".toRegex(), "")
+        webView.settings.userAgentString = customUserAgent
+
         webView.webViewClient = object : WebViewClient() {
             @Deprecated("Deprecated in Java")
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {

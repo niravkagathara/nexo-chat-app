@@ -27,7 +27,9 @@ function createWindow() {
 
   // Load the web app URL. Defaults to local server, but can be overridden with env APP_URL.
   const appUrl = process.env.APP_URL || 'https://www.nexochat.in';
-  mainWindow.loadURL(appUrl);
+  mainWindow.loadURL(appUrl, {
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+  });
 
   // Setup application menu with keyboard shortcuts (Reload, Copy/Paste, DevTools)
   // We keep it registered so the shortcuts are active, but hide the menu bar on Windows/Linux
