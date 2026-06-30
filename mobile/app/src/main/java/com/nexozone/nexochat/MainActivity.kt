@@ -146,9 +146,26 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Start background socket service if user is logged in
+        val prefs = getSharedPreferences("NexoPrefs", Context.MODE_PRIVATE)
+        val token = prefs.getString("token", null)
+        val userId = prefs.getInt("userId", -1)
+        if (token != null && userId != -1) {
+            startBackgroundService()
+        }
+
         // Load Nexo Chat URL
         val appUrl = "https://www.nexochat.in"
         webView.loadUrl(appUrl)
+    }
+
+    fun startBackgroundService() {
+        try {
+            val intent = Intent(this, NexoSocketService::class.java)
+            startService(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun checkAndRequestPermissions() {
@@ -216,6 +233,23 @@ class MainActivity : AppCompatActivity() {
             activity.runOnUiThread {
                 try {
                     activity.showNativeNotification(title, body)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun saveAuthData(token: String, userId: Int, userName: String) {
+            activity.runOnUiThread {
+                try {
+                    val prefs = activity.getSharedPreferences("NexoPrefs", Context.MODE_PRIVATE)
+                    prefs.edit()
+                        .putString("token", token)
+                        .putInt("userId", userId)
+                        .putString("userName", userName)
+                        .apply()
+                    activity.startBackgroundService()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

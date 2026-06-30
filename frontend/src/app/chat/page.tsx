@@ -340,6 +340,16 @@ export default function ChatPage() {
     }
   }, [router]);
 
+  // Synchronize login credentials with Android WebView native storage for closed-app background notifications
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).AndroidBridge?.saveAuthData) {
+      const token = localStorage.getItem('nexo_token');
+      if (token && currentUser) {
+        (window as any).AndroidBridge.saveAuthData(token, currentUser.id, currentUser.name);
+      }
+    }
+  }, [currentUser]);
+
   // Scroll to bottom helper
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
