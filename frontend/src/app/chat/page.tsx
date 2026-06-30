@@ -715,7 +715,9 @@ export default function ChatPage() {
       }
 
       // Push notification if window is not focused or not in active room
-      if (msg.userId !== currentUser.id && Notification.permission === 'granted') {
+      const hasAndroidBridge = typeof window !== 'undefined' && (window as any).AndroidBridge?.showNotification;
+      const hasWebNotification = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+      if (msg.userId !== currentUser.id && (hasWebNotification || hasAndroidBridge)) {
         const targetRoom = roomsRef.current.find((r) => r.id === msg.roomId);
         const isMuted = targetRoom?.isMuted || false;
 
@@ -830,7 +832,9 @@ export default function ChatPage() {
               setCallType(data.callType);
             }
             // Show browser notification for incoming call
-            if (Notification.permission === 'granted' && document.hidden) {
+            const hasAndroidBridge = typeof window !== 'undefined' && (window as any).AndroidBridge?.showNotification;
+            const hasWebNotification = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+            if ((hasWebNotification || hasAndroidBridge) && document.hidden) {
               if (typeof window !== 'undefined' && (window as any).AndroidBridge?.showNotification) {
                 (window as any).AndroidBridge.showNotification(
                   `Nexo Chat - Incoming ${data.callType || 'video'} call`,
