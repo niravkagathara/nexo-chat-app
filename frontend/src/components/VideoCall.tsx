@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, CameraOff, Mic, MicOff, PhoneOff, Video, Monitor, MonitorOff, User, Minimize2, Maximize2, UserPlus } from 'lucide-react';
+import { Camera, CameraOff, Mic, MicOff, PhoneOff, Video, Monitor, MonitorOff, User, Minimize2, Maximize2, UserPlus, RefreshCw, Volume2 } from 'lucide-react';
 import { Socket } from 'socket.io-client';
 
 interface VideoCallProps {
@@ -220,6 +220,13 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   const [callStatus, setCallStatus] = useState<string>('Initializing...');
   const [isCallAccepted, setIsCallAccepted] = useState(autoAccept || !isIncoming);
 
+  // Camera Switching States
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [currentVideoDeviceId, setCurrentVideoDeviceId] = useState<string>('');
+
+  // Speakerphone Toggle State
+  const [useLoudspeaker, setUseLoudspeaker] = useState(true);
+
   useEffect(() => {
     if (initialIncomingOfferSignal) {
       setIncomingOfferSignal(initialIncomingOfferSignal);
@@ -356,6 +363,80 @@ export const VideoCall: React.FC<VideoCallProps> = ({
       }
     };
   }, [isIncoming, isRejoining, isCallAccepted, remotePeers.length]);
+
+  useEffect(() => {
+    if (isCallAccepted && typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices()
+        .then((devices) => {
+          const vds = devices.filter(d => d.kind === 'videoinput');
+          setVideoDevices(vds);
+          if (vds.length > 0 && localStream) {
+            const activeTrack = localStream.getVideoTracks()[0];
+            if (activeTrack) {
+              const settings = activeTrack.getSettings();
+              if (settings.deviceId) {
+                setCurrentVideoDeviceId(settings.deviceId);
+              } else {
+                setCurrentVideoDeviceId(vds[0].deviceId);
+              }
+            }
+          }
+        })
+        .catch(err => console.warn('Enumerate devices failed:', err));
+    }
+  }, [isCallAccepted, localStream]);
+
+  const switchCamera = async () => {
+    if (videoDevices.length < 2 || !localStream) return;
+    
+    const currentIndex = videoDevices.findIndex(d => d.deviceId === currentVideoDeviceId);
+    const nextIndex = (currentIndex + 1) % videoDevices.length;
+    const nextDevice = videoDevices[nextIndex];
+
+    try {
+      setCallStatus('Switching camera...');
+      const oldVideoTrack = localStream.getVideoTracks()[0];
+      
+      const newConstraints = {
+        video: { deviceId: { exact: nextDevice.deviceId } },
+        audio: !isMuted
+      };
+      
+      const newStream = await navigator.mediaDevices.getUserMedia(newConstraints);
+      const newVideoTrack = newStream.getVideoTracks()[0];
+
+      if (oldVideoTrack) {
+        localStream.removeTrack(oldVideoTrack);
+        oldVideoTrack.stop();
+      }
+      localStream.addTrack(newVideoTrack);
+
+      setLocalStream(new MediaStream(localStream.getTracks()));
+      setCurrentVideoDeviceId(nextDevice.deviceId);
+
+      peerConnectionsRef.current.forEach((pc) => {
+        const transceivers = pc.getTransceivers();
+        const videoTransceiver = transceivers.find((t) => t.sender.track?.kind === 'video');
+        if (videoTransceiver && videoTransceiver.sender) {
+          videoTransceiver.sender.replaceTrack(newVideoTrack).catch((err) => {
+            console.warn('Failed to replace video track on switch:', err);
+          });
+        }
+      });
+      setCallStatus('Camera switched.');
+    } catch (err) {
+      console.error('Failed to switch camera:', err);
+      setCallStatus('Camera switch failed.');
+    }
+  };
+
+  const toggleSpeakerphone = () => {
+    const nextState = !useLoudspeaker;
+    setUseLoudspeaker(nextState);
+    if (typeof window !== 'undefined' && (window as any).AndroidBridge?.toggleSpeaker) {
+      (window as any).AndroidBridge.toggleSpeaker(nextState);
+    }
+  };
 
   const iceServers = {
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
@@ -1036,6 +1117,10 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     if (isScreenSharing) {
       stopScreenShare();
     } else {
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        alert("Screen sharing is not supported on this browser or mobile device.");
+        return;
+      }
       try {
         setCallStatus('Accessing screen share...');
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -1619,6 +1704,32 @@ export const VideoCall: React.FC<VideoCallProps> = ({
                 title={isVideoOff ? 'Turn Camera On' : 'Turn Camera Off'}
               >
                 {isVideoOff ? <CameraOff size={18} /> : <Camera size={18} />}
+              </button>
+            )}
+
+            {/* Camera Switch (Only if multiple cameras are available and video is on) */}
+            {callType === 'video' && !isVideoOff && videoDevices.length > 1 && (
+              <button
+                onClick={switchCamera}
+                className="p-3.5 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition cursor-pointer shadow-md"
+                title="Switch Camera"
+              >
+                <RefreshCw size={18} />
+              </button>
+            )}
+
+            {/* Loudspeaker Toggle (Only if running in Android app WebView) */}
+            {typeof window !== 'undefined' && (window as any).AndroidBridge?.toggleSpeaker && (
+              <button
+                onClick={toggleSpeakerphone}
+                className={`p-3.5 rounded-full transition cursor-pointer shadow-md ${
+                  useLoudspeaker
+                    ? 'bg-indigo-650 text-white hover:bg-[#4f46e5]'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+                title={useLoudspeaker ? 'Switch to Normal Speaker' : 'Switch to Loudspeaker'}
+              >
+                <Volume2 size={18} />
               </button>
             )}
 

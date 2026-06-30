@@ -720,9 +720,13 @@ export default function ChatPage() {
         const isMuted = targetRoom?.isMuted || false;
 
         if (!isMuted && (document.hidden || activeRoomRef.current?.id !== msg.roomId)) {
-          new Notification(`Nexo Chat - ${msg.user.name}`, {
-            body: msg.content,
-          });
+          if (typeof window !== 'undefined' && (window as any).AndroidBridge?.showNotification) {
+            (window as any).AndroidBridge.showNotification(`Nexo Chat - ${msg.user.name}`, msg.content);
+          } else {
+            new Notification(`Nexo Chat - ${msg.user.name}`, {
+              body: msg.content,
+            });
+          }
         }
       }
     });
@@ -827,11 +831,18 @@ export default function ChatPage() {
             }
             // Show browser notification for incoming call
             if (Notification.permission === 'granted' && document.hidden) {
-              new Notification(`Nexo Chat - Incoming ${data.callType || 'video'} call`, {
-                body: `${data.senderName} is calling you...`,
-                tag: `call_${data.roomId}`,
-                requireInteraction: true,
-              });
+              if (typeof window !== 'undefined' && (window as any).AndroidBridge?.showNotification) {
+                (window as any).AndroidBridge.showNotification(
+                  `Nexo Chat - Incoming ${data.callType || 'video'} call`,
+                  `${data.senderName} is calling you...`
+                );
+              } else {
+                new Notification(`Nexo Chat - Incoming ${data.callType || 'video'} call`, {
+                  body: `${data.senderName} is calling you...`,
+                  tag: `call_${data.roomId}`,
+                  requireInteraction: true,
+                });
+              }
             }
           }
         } else if (data.type === 'hangup') {
@@ -1347,9 +1358,14 @@ export default function ChatPage() {
   };
 
   const toggleUserSelection = (userId: number) => {
-    setSelectedUserIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
+    if (!newRoomIsGroup) {
+      // Start private discussion: Enforce single user selection only!
+      setSelectedUserIds((prev) => prev.includes(userId) ? [] : [userId]);
+    } else {
+      setSelectedUserIds((prev) =>
+        prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+      );
+    }
   };
 
 
@@ -4396,7 +4412,30 @@ export default function ChatPage() {
             </p>
             <div className="flex gap-4 justify-center">
               <button
-                onClick={() => {
+                onClick={async () => {
+                  const targetRoomId = incomingCall.roomId;
+                  if (targetRoomId) {
+                    const matched = rooms.find((r: any) => r.id === targetRoomId);
+                    if (matched) {
+                      setActiveRoom(matched);
+                    } else {
+                      const token = localStorage.getItem('nexo_token');
+                      if (token) {
+                        try {
+                          const res = await fetch(`${API_URL}/rooms/${targetRoomId}`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                          });
+                          if (res.ok) {
+                            const newRm = await res.json();
+                            setRooms((prev) => [...prev, newRm]);
+                            setActiveRoom(newRm);
+                          }
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }
+                    }
+                  }
                   setInCall(true);
                 }}
                 className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-full font-bold text-xs transition flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-700/20"
