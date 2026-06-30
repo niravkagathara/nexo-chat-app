@@ -1745,94 +1745,42 @@ export default function ChatPage() {
   };
 
   const handleInviteUserToCall = async (userId: number) => {
-    if (!activeRoom || !currentUser) return;
+    if (!activeRoom || !currentUser || !activeRoom.isGroup) return;
     const token = localStorage.getItem('nexo_token');
     if (!token) return;
 
-    if (activeRoom.isGroup) {
-      try {
-        const res = await fetch(`${API_URL}/rooms/${activeRoom.id}/members`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ userId }),
-        });
-        if (res.status === 401) {
-          handleLogout();
-          return;
-        }
-        if (res.ok) {
-          if (socket) {
-            socket.emit('notifyMemberChange', { roomId: activeRoom.id });
-
-            // Wait 1.5 seconds for the user to sync and join socket room, then invite
-            setTimeout(() => {
-              socket.emit('videoCallSignal', {
-                roomId: activeRoom.id,
-                senderId: currentUser.id,
-                senderName: currentUser.name,
-                type: 'offer',
-                callType: callType,
-                signal: null,
-              });
-            }, 1500);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to invite user to group call:', err);
+    try {
+      const res = await fetch(`${API_URL}/rooms/${activeRoom.id}/members`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId }),
+      });
+      if (res.status === 401) {
+        handleLogout();
+        return;
       }
-    } else {
-      // DM: Escalate to group
-      const otherPart = activeRoom.participants?.find((p: any) => p.user && Number(p.user.id) !== Number(currentUser.id));
-      const otherUserId = otherPart ? otherPart.user.id : null;
+      if (res.ok) {
+        if (socket) {
+          socket.emit('notifyMemberChange', { roomId: activeRoom.id });
 
-      try {
-        const res = await fetch(`${API_URL}/rooms`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: 'Group Call',
-            isGroup: true,
-            participantIds: otherUserId ? [otherUserId, userId] : [userId],
-          }),
-        });
-        if (res.status === 401) {
-          handleLogout();
-          return;
-        }
-        const newRoom = await res.json();
-        if (res.ok) {
-          // Switch active room
-          setActiveRoom(newRoom);
-          setRooms((prev) => [...prev, newRoom]);
-
-          if (socket) {
-            socket.emit('globalRoomUpdate', { roomId: newRoom.id });
-
-            // Hang up old call
+          // Wait 1.5 seconds for the user to sync and join socket room, then invite
+          setTimeout(() => {
             socket.emit('videoCallSignal', {
               roomId: activeRoom.id,
               senderId: currentUser.id,
               senderName: currentUser.name,
-              type: 'hangup',
+              type: 'offer',
+              callType: callType,
+              signal: null,
             });
-
-            // Transition call to new room
-            setInCall(false);
-            setCallRoomId(newRoom.id);
-            setTimeout(() => {
-              setInCall(true);
-            }, 500);
-          }
+          }, 1500);
         }
-      } catch (err) {
-        console.error('Failed to escalate DM call to group:', err);
       }
+    } catch (err) {
+      console.error('Failed to invite user to group call:', err);
     }
   };
 
@@ -4020,7 +3968,7 @@ export default function ChatPage() {
           autoAccept={incomingCall !== null}
           isRejoining={incomingCall === null && activeCalls[callRoomId || activeRoom?.id || 0] !== undefined}
           allUsers={allUsers}
-          onInviteUser={handleInviteUserToCall}
+          onInviteUser={activeRoom?.isGroup ? handleInviteUserToCall : undefined}
         />
       )}
 
