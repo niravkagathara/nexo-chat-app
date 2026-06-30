@@ -1136,7 +1136,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
 
         // Replace track on all active peer connections
         peerConnectionsRef.current.forEach((pc) => {
-          const videoSender = pc.getTransceivers().find((t) => t.receiver.track.kind === 'video')?.sender;
+          const videoSender = pc.getSenders().find((s) => s.track?.kind === 'video');
           if (videoSender) {
             videoSender.replaceTrack(screenTrack).catch((err) => {
               console.warn('Failed to replace video track with screen track:', err);
@@ -1176,7 +1176,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     // Restore camera video track on all peer connections
     const cameraTrack = localStreamRef.current?.getVideoTracks()[0] || null;
     peerConnectionsRef.current.forEach((pc) => {
-      const videoSender = pc.getTransceivers().find((t) => t.receiver.track.kind === 'video')?.sender;
+      const videoSender = pc.getSenders().find((s) => s.track?.kind === 'video');
       if (videoSender && cameraTrack) {
         videoSender.replaceTrack(cameraTrack).catch((err) => {
           console.warn('Failed to restore camera track:', err);
@@ -1214,6 +1214,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   };
 
   const cleanupCall = () => {
+    stopDialtone();
     stopScreenShare();
 
     // Logger writes duration info

@@ -168,6 +168,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun stopBackgroundService() {
+        try {
+            val intent = Intent(this, NexoSocketService::class.java)
+            stopService(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun checkAndRequestPermissions() {
         val permissions = mutableListOf(
             Manifest.permission.CAMERA,
@@ -250,6 +259,19 @@ class MainActivity : AppCompatActivity() {
                         .putString("userName", userName)
                         .apply()
                     activity.startBackgroundService()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun clearAuthData() {
+            activity.runOnUiThread {
+                try {
+                    val prefs = activity.getSharedPreferences("NexoPrefs", Context.MODE_PRIVATE)
+                    prefs.edit().clear().apply()
+                    activity.stopBackgroundService()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

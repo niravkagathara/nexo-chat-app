@@ -53,6 +53,9 @@ export default function ChatPage() {
   const handleLogout = () => {
     localStorage.removeItem('nexo_token');
     localStorage.removeItem('nexo_user');
+    if (typeof window !== 'undefined' && (window as any).AndroidBridge?.clearAuthData) {
+      (window as any).AndroidBridge.clearAuthData();
+    }
     router.push('/');
   };
 

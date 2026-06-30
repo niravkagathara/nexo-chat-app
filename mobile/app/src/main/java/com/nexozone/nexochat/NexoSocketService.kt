@@ -45,6 +45,7 @@ class NexoSocketService : Service() {
             val opts = IO.Options()
             opts.forceNew = true
             opts.reconnection = true
+            opts.transports = arrayOf("websocket")
             
             socket = IO.socket(socketUrl, opts)
 
