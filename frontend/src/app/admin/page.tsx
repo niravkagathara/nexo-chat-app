@@ -24,6 +24,10 @@ import {
   LogOut,
   HelpCircle,
   Filter,
+  Moon,
+  Sun,
+  Menu,
+  X,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.nexochat.in';
@@ -41,6 +45,46 @@ export default function AdminDashboard() {
 
   // Tab State
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+
+  // Theme & Responsiveness States
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [showAdminMobileSidebar, setShowAdminMobileSidebar] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('nexo_theme') as 'light' | 'dark' | null;
+    let activeTheme: 'light' | 'dark' = 'light';
+    if (savedTheme) {
+      activeTheme = savedTheme;
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      activeTheme = 'dark';
+    }
+    setTheme(activeTheme);
+  }, []);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+    localStorage.setItem('nexo_theme', nextTheme);
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return 'US';
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   // Loading & Error States
   const [loading, setLoading] = useState(true);
@@ -574,18 +618,31 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080b13] text-slate-100 font-sans flex transition-colors duration-300">
+    <div className={`min-h-screen bg-slate-100 dark:bg-[#080b13] text-slate-800 dark:text-slate-100 font-sans flex transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
       
       {/* ── Sidebar Navigation ─────────────────────────────────────────────────── */}
-      <aside className="w-64 bg-[#0a0f1d] border-r border-slate-800/80 p-6 flex flex-col justify-between shrink-0">
+      <aside className={`
+        fixed inset-y-0 left-0 z-45 w-64 flex flex-col justify-between shrink-0 p-6 transition-transform duration-300 md:static md:translate-x-0
+        bg-white dark:bg-[#0a0f1d] border-r border-slate-200 dark:border-slate-200 dark:border-slate-800/80
+        ${showAdminMobileSidebar ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+      `}>
         <div className="space-y-8">
           {/* Brand */}
-          <div className="flex items-center gap-3">
-            <img src="/logo-icon.png" alt="NexoChat Logo" className="w-9 h-9 object-contain rounded-xl" />
-            <div>
-              <span className="text-base font-black tracking-tight block">Nexo Admin</span>
-              <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider block">Super Admin Dashboard</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <img src="/logo-icon.png" alt="NexoChat Logo" className="w-9 h-9 object-contain rounded-xl" />
+              <div>
+                <span className="text-base font-black tracking-tight block text-slate-850 dark:text-white">Nexo Admin</span>
+                <span className="text-[10px] text-indigo-650 dark:text-indigo-400 font-bold uppercase tracking-wider block">Super Admin Dashboard</span>
+              </div>
             </div>
+            <button
+              onClick={() => setShowAdminMobileSidebar(false)}
+              className="md:hidden p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
+              title="Close Menu"
+            >
+              <X size={16} />
+            </button>
           </div>
 
           {/* Nav List */}
@@ -599,11 +656,14 @@ export default function AdminDashboard() {
             ].map(({ id, label, Icon }) => (
               <button
                 key={id}
-                onClick={() => setActiveTab(id as Tab)}
+                onClick={() => {
+                  setActiveTab(id as Tab);
+                  setShowAdminMobileSidebar(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition cursor-pointer ${
                   activeTab === id
                     ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-600/10'
-                    : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+                    : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Icon size={18} />
@@ -613,11 +673,14 @@ export default function AdminDashboard() {
 
             {currentUser?.role === 'superadmin' && (
               <button
-                onClick={() => setActiveTab('permissions')}
+                onClick={() => {
+                  setActiveTab('permissions');
+                  setShowAdminMobileSidebar(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition cursor-pointer ${
                   activeTab === 'permissions'
                     ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-600/10'
-                    : 'text-slate-400 hover:bg-slate-800/40 hover:text-white'
+                    : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Shield size={18} />
@@ -628,22 +691,33 @@ export default function AdminDashboard() {
         </div>
 
         {/* User Info / Actions */}
-        <div className="pt-6 border-t border-slate-800/60">
+        <div className="pt-6 border-t border-slate-200 dark:border-slate-800/60">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md">
-              {currentUser?.name.substring(0, 2).toUpperCase()}
+              {getInitials(currentUser?.name || '')}
             </div>
             <div className="truncate">
-              <span className="text-xs font-bold block text-white truncate">{currentUser?.name}</span>
-              <span className="text-[10px] text-emerald-400 font-semibold block uppercase tracking-wider">
+              <span className="text-xs font-bold block text-slate-850 dark:text-white truncate">{currentUser?.name}</span>
+              <span className="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold block uppercase tracking-wider">
                 {currentUser?.role}
               </span>
             </div>
           </div>
 
           <button
-            onClick={() => router.push('/chat')}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
+            onClick={toggleTheme}
+            className="w-full flex items-center justify-center gap-2 mb-2 py-2 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+          >
+            {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+            <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowAdminMobileSidebar(false);
+              router.push('/chat');
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-70/60 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
           >
             <ArrowLeft size={14} />
             <span>Chat Workspace</span>
@@ -651,28 +725,45 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
+      {/* Backdrop overlay for mobile */}
+      {showAdminMobileSidebar && (
+        <div
+          onClick={() => setShowAdminMobileSidebar(false)}
+          className="fixed inset-0 z-40 bg-black/50 md:hidden animate-fade-in"
+        />
+      )}
+
       {/* ── Main Content Area ──────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto relative p-8">
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto relative p-4 md:p-8 bg-slate-50 dark:bg-[#080b13] transition-colors duration-300">
         
         {/* Header */}
-        <header className="flex justify-between items-center mb-8 shrink-0">
-          <div>
-            <h1 className="text-2xl font-black text-white">
-              {activeTab === 'overview' && 'System Analytics'}
-              {activeTab === 'users' && 'Manage Users'}
-              {activeTab === 'rooms' && 'Manage Discussion Channels'}
-              {activeTab === 'files' && 'Shared Attachments Audit'}
-              {activeTab === 'calls' && 'WebRTC Call History'}
-              {activeTab === 'permissions' && 'Role Permission Management'}
-            </h1>
-            <p className="text-slate-400 text-xs mt-1">
-              {activeTab === 'overview' && 'Real-time metrics, message trends, and database records overview.'}
-              {activeTab === 'users' && 'Promote user roles, force password resets, or remove workspace members.'}
-              {activeTab === 'rooms' && 'Monitor and manage group discussion channels, members, and channel admins.'}
-              {activeTab === 'files' && 'Audit shared document history and perform storage disk space cleanups.'}
-              {activeTab === 'calls' && 'Review WebRTC voice and video session histories and durations.'}
-              {activeTab === 'permissions' && 'Configure dynamic action-level privileges for standard administrators.'}
-            </p>
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAdminMobileSidebar(true)}
+              className="md:hidden p-2 bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white transition cursor-pointer"
+              title="Open Navigation Menu"
+            >
+              <Menu size={18} />
+            </button>
+            <div>
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+                {activeTab === 'overview' && 'System Analytics'}
+                {activeTab === 'users' && 'Manage Users'}
+                {activeTab === 'rooms' && 'Manage Discussion Channels'}
+                {activeTab === 'files' && 'Shared Attachments Audit'}
+                {activeTab === 'calls' && 'WebRTC Call History'}
+                {activeTab === 'permissions' && 'Role Permission Management'}
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
+                {activeTab === 'overview' && 'Real-time metrics, message trends, and database records overview.'}
+                {activeTab === 'users' && 'Promote user roles, force password resets, or remove workspace members.'}
+                {activeTab === 'rooms' && 'Monitor and manage group discussion channels, members, and channel admins.'}
+                {activeTab === 'files' && 'Audit shared document history and perform storage disk space cleanups.'}
+                {activeTab === 'calls' && 'Review WebRTC voice and video session histories and durations.'}
+                {activeTab === 'permissions' && 'Configure dynamic action-level privileges for standard administrators.'}
+              </p>
+            </div>
           </div>
 
           {/* Quick status bar */}
@@ -689,8 +780,8 @@ export default function AdminDashboard() {
                 <span>{error}</span>
               </div>
             )}
-            <div className="h-4 border-l border-slate-800/80" />
-            <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#0a0f1d] border border-slate-800 rounded-xl text-xs font-semibold text-slate-400 shadow-xs">
+            <div className="h-4 border-l border-slate-300 dark:border-slate-200 dark:border-slate-800/80" />
+            <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-500 dark:text-slate-400 shadow-2xs">
               <Activity size={12} className="text-emerald-400 animate-pulse" />
               <span>Server Online</span>
             </div>
@@ -718,10 +809,10 @@ export default function AdminDashboard() {
                     { label: 'Files Shared', value: stats.totalFiles, Icon: Paperclip, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
                     { label: 'Total Calls', value: stats.totalCalls, Icon: Video, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
                   ].map((card, idx) => (
-                    <div key={idx} className="bg-slate-900/40 border border-slate-800/60 p-5 rounded-2xl flex items-center justify-between shadow-xs">
+                    <div key={idx} className="bg-white dark:bg-[#0a0f1d]/50 border border-slate-200 dark:border-slate-800/60 p-5 rounded-2xl flex items-center justify-between shadow-2xs">
                       <div>
-                        <span className="text-slate-400 text-xs font-semibold block">{card.label}</span>
-                        <span className="text-3xl font-black text-white mt-1.5 block">{card.value}</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-xs font-semibold block">{card.label}</span>
+                        <span className="text-3xl font-black text-slate-905 dark:text-white mt-1.5 block">{card.value}</span>
                       </div>
                       <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${card.color}`}>
                         <card.Icon size={20} />
@@ -732,9 +823,9 @@ export default function AdminDashboard() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Message Trend Chart */}
-                  <div className="lg:col-span-2 bg-[#0a0f1d] border border-slate-800/80 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+                  <div className="lg:col-span-2 bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl p-6 shadow-2xs flex flex-col justify-between">
                     <div className="mb-6 flex justify-between items-center">
-                      <h3 className="font-extrabold text-white text-sm flex items-center gap-2">
+                      <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                         <TrendingUp size={16} className="text-indigo-400" />
                         Message Volume (Last 7 Days)
                       </h3>
@@ -757,7 +848,7 @@ export default function AdminDashboard() {
                               style={{ height: `${percent}%` }}
                               className="w-full bg-gradient-to-t from-blue-600 to-indigo-500 rounded-lg shadow-sm hover:from-blue-500 hover:to-indigo-400 hover:scale-105 active:scale-95 transition-all duration-300 relative cursor-pointer"
                             />
-                            <span className="text-[10px] text-slate-400 font-semibold mt-1 text-center truncate w-full">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1 text-center truncate w-full">
                               {day.label}
                             </span>
                           </div>
@@ -767,25 +858,25 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Right side stats Card */}
-                  <div className="bg-[#0a0f1d] border border-slate-800/80 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+                  <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl p-6 shadow-2xs flex flex-col justify-between">
                     <div>
-                      <h3 className="font-extrabold text-white text-sm flex items-center gap-2 mb-6">
+                      <h3 className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-2 mb-6">
                         <Database size={16} className="text-amber-400" />
                         Storage & Infrastructure
                       </h3>
                       <div className="space-y-4">
-                        <div className="p-4 bg-slate-900/50 border border-slate-800/60 rounded-xl flex items-center justify-between">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/60 rounded-xl flex items-center justify-between">
                           <div>
-                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Disk Storage Used</span>
-                            <span className="text-xl font-black text-white mt-1 block">{formatBytes(stats.storageSize)}</span>
+                            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Disk Storage Used</span>
+                            <span className="text-xl font-black text-slate-900 dark:text-white mt-1 block">{formatBytes(stats.storageSize)}</span>
                           </div>
                           <Paperclip className="text-amber-400" size={24} />
                         </div>
 
-                        <div className="p-4 bg-slate-900/50 border border-slate-800/60 rounded-xl flex items-center justify-between">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/60 rounded-xl flex items-center justify-between">
                           <div>
-                            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Avg Messages / Room</span>
-                            <span className="text-xl font-black text-white mt-1 block">
+                            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Avg Messages / Room</span>
+                            <span className="text-xl font-black text-slate-900 dark:text-white mt-1 block">
                               {stats.totalRooms > 0 ? (stats.totalMessages / stats.totalRooms).toFixed(1) : 0}
                             </span>
                           </div>
@@ -841,7 +932,7 @@ export default function AdminDashboard() {
             {activeTab === 'users' && (
               <div className="space-y-5 animate-fade-in">
                 {/* Filters */}
-                <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#0a0f1d] border border-slate-800/80 p-4 rounded-2xl">
+                <div className="flex flex-col sm:flex-row items-center gap-4 bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl">
                   <div className="relative flex-1 w-full">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input
@@ -849,7 +940,7 @@ export default function AdminDashboard() {
                       placeholder="Search users by name or email..."
                       value={userQuery}
                       onChange={e => setUserQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900/40 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                   <div className="flex items-center gap-4 shrink-0 w-full sm:w-auto">
@@ -858,7 +949,7 @@ export default function AdminDashboard() {
                       <select
                         value={userRoleFilter}
                         onChange={e => setUserRoleFilter(e.target.value)}
-                        className="bg-slate-900 border border-slate-800 text-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                        className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-355 px-3.5 py-2.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                       >
                         <option value="all">All Roles</option>
                         <option value="user">User</option>
@@ -884,11 +975,11 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Table */}
-                <div className="bg-[#0a0f1d] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xs">
+                <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl overflow-hidden shadow-xs">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-800/80 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-900/20">
+                        <tr className="border-b border-slate-200 dark:border-slate-800/80 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/50 dark:bg-slate-900/20">
                           <th className="py-4 px-6">User Profile</th>
                           <th className="py-4 px-6">Email Address</th>
                           <th className="py-4 px-6">Security Role</th>
@@ -1007,7 +1098,7 @@ export default function AdminDashboard() {
             {activeTab === 'rooms' && (
               <div className="space-y-5 animate-fade-in">
                 {/* Filter */}
-                <div className="flex items-center bg-[#0a0f1d] border border-slate-800/80 p-4 rounded-2xl">
+                <div className="flex items-center bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl">
                   <div className="relative flex-1 w-full">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input
@@ -1015,7 +1106,7 @@ export default function AdminDashboard() {
                       placeholder="Search channels/rooms by name..."
                       value={roomQuery}
                       onChange={e => setRoomQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900/40 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
@@ -1024,7 +1115,7 @@ export default function AdminDashboard() {
                 {filteredRooms.length > 0 ? (
                   <div className="space-y-3">
                     {filteredRooms.map(room => (
-                      <div key={room.id} className="bg-[#0a0f1d] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xs hover:border-slate-700/60 transition-colors duration-200">
+                      <div key={room.id} className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl overflow-hidden shadow-xs hover:border-slate-700/60 transition-colors duration-200">
 
                         {/* ── Channel Header Row ─────────────────────── */}
                         <div
@@ -1073,7 +1164,7 @@ export default function AdminDashboard() {
                                 {room.members.slice(0, 4).map((member: any) => (
                                   <div
                                     key={member.id}
-                                    className="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800/60 rounded-lg px-2 py-1 max-w-[160px]"
+                                    className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800/60 rounded-lg px-2 py-1 max-w-[160px]"
                                     title={`${member.name} — ${member.email}`}
                                   >
                                     <div className="w-4 h-4 bg-indigo-500/20 border border-indigo-500/30 rounded-full flex items-center justify-center text-[8px] font-bold text-indigo-400 shrink-0">
@@ -1089,7 +1180,7 @@ export default function AdminDashboard() {
                                   </div>
                                 ))}
                                 {room.members.length > 4 && (
-                                  <div className="flex items-center px-2 py-1 bg-slate-900/50 border border-slate-800/40 rounded-lg">
+                                  <div className="flex items-center px-2 py-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/40 rounded-lg">
                                     <span className="text-[10px] text-slate-500 font-semibold">+{room.members.length - 4} more</span>
                                   </div>
                                 )}
@@ -1129,7 +1220,7 @@ export default function AdminDashboard() {
 
                         {/* ── Expanded Member Directory ──────────────── */}
                         {expandedRoomId === room.id && (
-                          <div className="border-t border-slate-800/80 bg-[#080b13]/70 px-6 py-5 space-y-5">
+                          <div className="border-t border-slate-200 dark:border-slate-800/80 bg-[#080b13]/70 px-6 py-5 space-y-5">
                             {/* Header + Add Member */}
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                               <div>
@@ -1148,7 +1239,7 @@ export default function AdminDashboard() {
                                   value={addMemberUserId}
                                   onChange={e => setAddMemberUserId(e.target.value)}
                                   disabled={!canPerform('manage_rooms')}
-                                  className="bg-slate-900 border border-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex-1 sm:max-w-[220px]"
+                                  className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex-1 sm:max-w-[220px]"
                                 >
                                   <option value="">Select user to add...</option>
                                   {users
@@ -1176,10 +1267,10 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Member Table */}
-                            <div className="rounded-xl overflow-hidden border border-slate-800/80">
+                            <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800/80">
                               <table className="w-full text-left border-collapse">
                                 <thead>
-                                  <tr className="border-b border-slate-800/80 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-slate-900/60">
+                                  <tr className="border-b border-slate-200 dark:border-slate-800/80 text-[10px] font-black uppercase tracking-wider text-slate-500 bg-slate-50/50 dark:bg-slate-900/60">
                                     <th className="py-3 px-4">Member</th>
                                     <th className="py-3 px-4">Email</th>
                                     <th className="py-3 px-4">Joined</th>
@@ -1190,7 +1281,7 @@ export default function AdminDashboard() {
                                 <tbody className="divide-y divide-slate-800/40 text-xs">
                                   {room.members.length > 0 ? (
                                     room.members.map((member: any) => (
-                                      <tr key={member.id} className="hover:bg-slate-900/40 transition-colors">
+                                      <tr key={member.id} className="hover:bg-slate-100 dark:hover:bg-slate-900/40 transition-colors">
                                         {/* Member Name + Avatar */}
                                         <td className="py-3 px-4">
                                           <div className="flex items-center gap-2.5">
@@ -1278,7 +1369,7 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-[#0a0f1d] border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500 font-semibold">
+                  <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl p-12 text-center text-slate-500 font-semibold">
                     No channels or rooms match your search.
                   </div>
                 )}
@@ -1290,7 +1381,7 @@ export default function AdminDashboard() {
             {activeTab === 'files' && (
               <div className="space-y-5 animate-fade-in">
                 {/* Filter */}
-                <div className="flex items-center bg-[#0a0f1d] border border-slate-800/80 p-4 rounded-2xl">
+                <div className="flex items-center bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl">
                   <div className="relative flex-1 w-full">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input
@@ -1298,7 +1389,7 @@ export default function AdminDashboard() {
                       placeholder="Search files by file name or uploader..."
                       value={fileQuery}
                       onChange={e => setFileQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900/40 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
@@ -1307,14 +1398,14 @@ export default function AdminDashboard() {
                 {filteredFiles.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                     {filteredFiles.map(file => (
-                      <div key={file.id} className="bg-[#0a0f1d] border border-slate-800/80 p-5 rounded-2xl flex flex-col justify-between shadow-xs hover:border-slate-700/80 transition duration-300">
+                      <div key={file.id} className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 p-5 rounded-2xl flex flex-col justify-between shadow-xs hover:border-slate-700/80 transition duration-300">
                         <div>
                           {/* File Icon & Type */}
                           <div className="flex items-center justify-between mb-4">
                             <div className="w-10 h-10 bg-slate-800 border border-slate-700/60 rounded-xl flex items-center justify-center text-indigo-400 shadow-sm">
                               <FileText size={20} />
                             </div>
-                            <span className="text-[10px] text-slate-500 font-bold font-mono uppercase bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                            <span className="text-[10px] text-slate-500 font-bold font-mono uppercase bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded">
                               {file.fileType.split('/')[1] || 'FILE'}
                             </span>
                           </div>
@@ -1370,7 +1461,7 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-[#0a0f1d] border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500 font-semibold">
+                  <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl p-12 text-center text-slate-500 font-semibold">
                     No uploaded files match your filters.
                   </div>
                 )}
@@ -1382,7 +1473,7 @@ export default function AdminDashboard() {
             {activeTab === 'calls' && (
               <div className="space-y-5 animate-fade-in">
                 {/* Filter */}
-                <div className="flex items-center bg-[#0a0f1d] border border-slate-800/80 p-4 rounded-2xl">
+                <div className="flex items-center bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 p-4 rounded-2xl">
                   <div className="relative flex-1 w-full">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input
@@ -1390,7 +1481,7 @@ export default function AdminDashboard() {
                       placeholder="Search call sessions by caller name or channel..."
                       value={callQuery}
                       onChange={e => setCallQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-900/40 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
@@ -1409,7 +1500,7 @@ export default function AdminDashboard() {
                         : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
 
                       return (
-                        <div key={call.id} className="bg-[#0a0f1d] border border-slate-800/80 rounded-2xl p-5 shadow-xs hover:border-slate-700/60 transition duration-300">
+                        <div key={call.id} className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs hover:border-slate-700/60 transition duration-300">
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                             {/* Left: Session ID + Room */}
                             <div className="flex items-center gap-4">
@@ -1429,7 +1520,7 @@ export default function AdminDashboard() {
 
                             {/* Right: Status Badge + Duration */}
                             <div className="flex items-center gap-3 shrink-0">
-                              <div className="flex items-center gap-1.5 text-slate-300 text-xs font-mono font-bold bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+                              <div className="flex items-center gap-1.5 text-slate-300 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl">
                                 <Clock size={12} className="text-slate-500" />
                                 <span>{call.duration}s</span>
                               </div>
@@ -1497,7 +1588,7 @@ export default function AdminDashboard() {
                     })}
                   </div>
                 ) : (
-                  <div className="bg-[#0a0f1d] border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500 font-semibold">
+                  <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl p-12 text-center text-slate-500 font-semibold">
                     No WebRTC call history matches your filters.
                   </div>
                 )}
@@ -1507,7 +1598,7 @@ export default function AdminDashboard() {
             {/* ── TAB: PERMISSIONS ────────────────────────────────────────────── */}
             {activeTab === 'permissions' && currentUser?.role === 'superadmin' && (
               <div className="space-y-6 animate-fade-in">
-                <div className="bg-[#0a0f1d] border border-slate-800/80 rounded-2xl p-6 shadow-xs">
+                <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl p-6 shadow-xs">
                   <h3 className="font-extrabold text-white text-base flex items-center gap-2 mb-4">
                     <Shield size={18} className="text-indigo-400" />
                     Configure Admin Role Permissions
@@ -1562,8 +1653,8 @@ export default function AdminDashboard() {
       {/* ── MODAL: EDIT USER ───────────────────────────────────────────────────── */}
       {showEditUserModal && selectedUser && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#0a0f1d] border border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <Edit size={16} className="text-indigo-400" />
                 Edit Workspace User
@@ -1586,7 +1677,7 @@ export default function AdminDashboard() {
                   required
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1599,7 +1690,7 @@ export default function AdminDashboard() {
                   required
                   value={editEmail}
                   onChange={e => setEditEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1611,7 +1702,7 @@ export default function AdminDashboard() {
                   value={editRole}
                   disabled={currentUser?.role !== 'superadmin'}
                   onChange={e => setEditRole(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="user">User (Regular Participant)</option>
                   <option value="admin">Admin (Channel and File manager)</option>
@@ -1626,7 +1717,7 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowEditUserModal(false)}
-                  className="w-1/2 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="w-1/2 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1647,8 +1738,8 @@ export default function AdminDashboard() {
       {/* ── MODAL: RESET PASSWORD ─────────────────────────────────────────────── */}
       {showResetPasswordModal && selectedUser && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#0a0f1d] border border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <Key size={16} className="text-amber-400" />
                 Force Reset Password
@@ -1662,7 +1753,7 @@ export default function AdminDashboard() {
             </div>
 
             <form onSubmit={handleResetPassword} className="p-6 space-y-4">
-              <div className="p-3 bg-slate-900 border border-slate-800 text-slate-400 rounded-xl text-xs">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 rounded-xl text-xs">
                 You are forcing a password reset for <strong className="text-white">{selectedUser.name}</strong>. They will need to use this password on their next login.
               </div>
 
@@ -1676,7 +1767,7 @@ export default function AdminDashboard() {
                   placeholder="Min 6 characters"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1687,7 +1778,7 @@ export default function AdminDashboard() {
                     setNewPassword('');
                     setShowResetPasswordModal(false);
                   }}
-                  className="w-1/2 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="w-1/2 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1708,8 +1799,8 @@ export default function AdminDashboard() {
       {/* ── MODAL: DELETE USER ─────────────────────────────────────────────────── */}
       {showDeleteUserModal && selectedUser && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#0a0f1d] border border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <AlertCircle size={16} className="text-rose-500" />
                 Delete User Account
@@ -1731,7 +1822,7 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowDeleteUserModal(false)}
-                  className="w-1/2 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="w-1/2 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1752,8 +1843,8 @@ export default function AdminDashboard() {
       {/* ── MODAL: DELETE ROOM ─────────────────────────────────────────────────── */}
       {showDeleteRoomModal && selectedRoom && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#0a0f1d] border border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <AlertCircle size={16} className="text-rose-500" />
                 Delete Discussion Room
@@ -1775,7 +1866,7 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowDeleteRoomModal(false)}
-                  className="w-1/2 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="w-1/2 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1796,8 +1887,8 @@ export default function AdminDashboard() {
       {/* ── MODAL: DELETE FILE ─────────────────────────────────────────────────── */}
       {showDeleteFileModal && selectedFile && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#0a0f1d] border border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <AlertCircle size={16} className="text-rose-500" />
                 Delete Shared File
@@ -1819,7 +1910,7 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowDeleteFileModal(false)}
-                  className="w-1/2 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="w-1/2 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1840,8 +1931,8 @@ export default function AdminDashboard() {
       {/* ── MODAL: ADD USER ────────────────────────────────────────────────────── */}
       {showAddUserModal && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#0a0f1d] border border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <Users size={16} className="text-indigo-400" />
                 Create New User
@@ -1865,7 +1956,7 @@ export default function AdminDashboard() {
                   placeholder="e.g. John Doe"
                   value={addName}
                   onChange={e => setAddName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1879,7 +1970,7 @@ export default function AdminDashboard() {
                   placeholder="e.g. john@example.com"
                   value={addEmail}
                   onChange={e => setAddEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1893,7 +1984,7 @@ export default function AdminDashboard() {
                   placeholder="Min 6 characters"
                   value={addPassword}
                   onChange={e => setAddPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1904,7 +1995,7 @@ export default function AdminDashboard() {
                 <select
                   value={addRole}
                   onChange={e => setAddRole(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-350 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-350 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 >
                   <option value="user">User (Regular Participant)</option>
                   <option value="admin">Admin (Channel and File manager)</option>
@@ -1916,7 +2007,7 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowAddUserModal(false)}
-                  className="w-1/2 py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="w-1/2 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancel
                 </button>

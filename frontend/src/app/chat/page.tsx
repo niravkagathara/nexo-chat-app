@@ -42,6 +42,7 @@ import {
   Download,
   Upload,
   Shield,
+  ArrowLeft,
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.nexochat.in';
@@ -78,6 +79,14 @@ export default function ChatPage() {
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [showRightPanel, setShowRightPanel] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Mention Autocomplete States
+  const [showMentionsDropdown, setShowMentionsDropdown] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState('');
+  const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
+  const [mentionTriggerIndex, setMentionTriggerIndex] = useState(-1);
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
 
   // Profile Edit Modal State
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -951,8 +960,50 @@ export default function ChatPage() {
 
   // 4. Input events & typing status
   const handleNewMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNewMessage(e.target.value);
+    const val = e.target.value;
+    setNewMessage(val);
     sendTypingStatus(true);
+
+    const selectionStart = e.target.selectionStart;
+    const textBeforeCursor = val.slice(0, selectionStart);
+    const mentionMatch = textBeforeCursor.match(/@([A-Za-z0-9_]*)$/);
+
+    if (mentionMatch && activeRoom?.isGroup) {
+      const query = mentionMatch[1].toLowerCase();
+      setMentionSearch(query);
+      setMentionTriggerIndex(selectionStart - mentionMatch[0].length);
+
+      const filtered = (activeRoom.participants || [])
+        .map((p: any) => p.user)
+        .filter((u: any) => u && u.id !== currentUser?.id && u.name.toLowerCase().includes(query));
+
+      setMentionSuggestions(filtered);
+      setShowMentionsDropdown(filtered.length > 0);
+      setSelectedMentionIndex(0);
+    } else {
+      setShowMentionsDropdown(false);
+      setMentionSuggestions([]);
+    }
+  };
+
+  const insertMention = (user: any) => {
+    if (mentionTriggerIndex === -1) return;
+    const value = newMessage;
+    const before = value.slice(0, mentionTriggerIndex);
+    const after = value.slice(mentionTriggerIndex + mentionSearch.length + 1); // +1 for @
+    const completedText = `${before}@${user.name} ${after}`;
+    setNewMessage(completedText);
+    setShowMentionsDropdown(false);
+    setMentionSuggestions([]);
+
+    const textarea = document.activeElement as HTMLTextAreaElement;
+    if (textarea && textarea.tagName === 'TEXTAREA') {
+      textarea.focus();
+      const newCursorPos = mentionTriggerIndex + user.name.length + 2;
+      setTimeout(() => {
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    }
   };
 
   const sendTypingStatus = (isTyping: boolean) => {
@@ -1003,9 +1054,37 @@ export default function ChatPage() {
     setNewMessage('');
     setReplyToMessage(null);
     sendTypingStatus(false);
+    setShowMentionsDropdown(false);
+    setMentionSuggestions([]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showMentionsDropdown) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedMentionIndex((prev) => (prev + 1) % mentionSuggestions.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedMentionIndex((prev) => (prev - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const user = mentionSuggestions[selectedMentionIndex];
+        if (user) {
+          insertMention(user);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowMentionsDropdown(false);
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -1021,53 +1100,72 @@ export default function ChatPage() {
     fileInputRef.current?.click();
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeRoom || !currentUser || !socket) return;
 
-    // Enforce 10MB size limit
-    const MAX_SIZE = 10 * 1024 * 1024;
+    // Enforce 100MB size limit
+    const MAX_SIZE = 100 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      alert('File exceeds the 10MB limit. Please upload a smaller file.');
+      alert('File exceeds the 100MB limit. Please upload a smaller file.');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
     setUploading(true);
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      const res = await fetch(`${API_URL}/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const uploadData = await res.json();
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/upload`);
 
-      if (res.ok) {
-        socket.emit('sendMessage', {
-          content: `Shared a file: ${file.name}`,
-          roomId: activeRoom.id,
-          userId: currentUser.id,
-          attachments: [
-            {
-              fileName: uploadData.fileName,
-              fileType: uploadData.fileType,
-              fileUrl: uploadData.fileUrl,
-              fileSize: uploadData.fileSize,
-            },
-          ],
-        });
+    // Track upload progress
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(percent);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const uploadData = JSON.parse(xhr.responseText);
+          socket.emit('sendMessage', {
+            content: `Shared a file: ${file.name}`,
+            roomId: activeRoom.id,
+            userId: currentUser.id,
+            attachments: [
+              {
+                fileName: uploadData.fileName,
+                fileType: uploadData.fileType,
+                fileUrl: uploadData.fileUrl,
+                fileSize: uploadData.fileSize,
+              },
+            ],
+          });
+        } catch (err) {
+          console.error('Failed to parse upload response:', err);
+          alert('Upload failed parsing response');
+        }
       } else {
         alert('File upload failed');
       }
-    } catch (err) {
-      console.error('Upload error:', err);
-      alert('Upload failed');
-    } finally {
       setUploading(false);
+      setUploadProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    };
+
+    xhr.onerror = () => {
+      console.error('XHR Upload network error');
+      alert('Upload network error');
+      setUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    xhr.send(formData);
   };
 
   // 7. Toggle Reaction
@@ -1772,18 +1870,28 @@ export default function ChatPage() {
     SJ: 'bg-fuchsia-500 text-white',
     PP: 'bg-indigo-500 text-white',
     RK: 'bg-orange-500 text-white',
-    AR: 'bg-cyan-500 text-white',
+      AR: 'bg-cyan-500 text-white',
   };
 
   const avatarOptions = Object.keys(avatarColors);
 
-  const getAvatarColor = (initials: string) => {
-    return avatarColors[initials] || 'bg-slate-500 text-white';
+  const getAvatarColor = (code: string) => {
+    if (avatarColors[code]) return avatarColors[code];
+    // Hash other strings to assign a consistent, beautiful color
+    let hash = 0;
+    for (let i = 0; i < code.length; i++) {
+      hash = code.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colors = Object.values(avatarColors);
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
   };
 
   const getInitials = (name: string) => {
+    if (!name) return 'US';
     return name
       .split(' ')
+      .filter(Boolean)
       .map((n) => n[0])
       .join('')
       .substring(0, 2)
@@ -1807,12 +1915,20 @@ export default function ChatPage() {
 
   const renderAvatar = (avatarUrl: string | null, name: string, sizeClass = 'w-8 h-8 text-xs') => {
     const initials = getInitials(name);
-    const isUrl = avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/') || avatarUrl.includes('.'));
+    const isUrl = avatarUrl && (
+      avatarUrl.startsWith('http') || 
+      avatarUrl.startsWith('/') || 
+      avatarUrl.startsWith('data:') ||
+      avatarUrl.includes('.png') ||
+      avatarUrl.includes('.jpg') ||
+      avatarUrl.includes('.jpeg') ||
+      avatarUrl.includes('.webp')
+    );
 
     if (isUrl) {
       return (
         <img
-          src={avatarUrl.startsWith('/') ? `${API_URL}${avatarUrl}` : avatarUrl}
+          src={avatarUrl.startsWith('/') && !avatarUrl.startsWith('data:') ? `${API_URL}${avatarUrl}` : avatarUrl}
           alt={name}
           referrerPolicy="no-referrer"
           className={`${sizeClass.split(' ')[0]} ${sizeClass.split(' ')[1]} rounded-full object-cover shrink-0`}
@@ -1820,10 +1936,12 @@ export default function ChatPage() {
       );
     }
 
-    const code = avatarUrl || initials;
+    // Dynamic initials: Always render initials derived from current name.
+    // Use avatarUrl color key if present, otherwise hash.
+    const colorCode = avatarUrl || initials;
     return (
-      <div className={`${sizeClass} rounded-full flex items-center justify-center font-bold shrink-0 ${getAvatarColor(code)}`}>
-        {code}
+      <div className={`${sizeClass} rounded-full flex items-center justify-center font-bold shrink-0 ${getAvatarColor(colorCode)}`}>
+        {initials}
       </div>
     );
   };
@@ -1902,22 +2020,81 @@ export default function ChatPage() {
         }
         parts = newParts;
 
+        const renderTextWithLinksAndMentions = (text: string) => {
+          if (!text) return '';
+          const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+          const tokens = text.split(urlRegex);
+
+          return tokens.map((token, tokenIdx) => {
+            const isUrl = urlRegex.test(token);
+            if (isUrl) {
+              const href = token.startsWith('www.') ? `https://${token}` : token;
+              return (
+                <a
+                  key={`link-${tokenIdx}`}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${isMe ? 'text-indigo-200 hover:text-white underline' : 'text-indigo-650 hover:underline underline'} font-semibold break-all`}
+                >
+                  {token}
+                </a>
+              );
+            }
+
+            const participants = activeRoom?.participants || [];
+            const memberNames = participants
+              .map((p: any) => p.user?.name)
+              .filter(Boolean)
+              .sort((a: string, b: string) => b.length - a.length);
+
+            if (memberNames.length === 0) {
+              return token;
+            }
+
+            const escapedNames = memberNames.map((name: string) =>
+              name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+            );
+            const mentionRegex = new RegExp(`@(${escapedNames.join('|')})`, 'g');
+            const subTokens = token.split(mentionRegex);
+
+            if (subTokens.length <= 1) {
+              return token;
+            }
+
+            return subTokens.map((subToken, subTokenIdx) => {
+              if (subTokenIdx % 2 === 1) {
+                return (
+                  <span
+                    key={`mention-${subTokenIdx}`}
+                    className="font-extrabold text-indigo-700 bg-indigo-50 dark:text-indigo-300 dark:bg-indigo-950/70 border border-indigo-200/20 px-1 py-0.5 rounded"
+                  >
+                    @{subToken}
+                  </span>
+                );
+              }
+              return subToken;
+            });
+          });
+        };
+
         return parts.map((p, idx) => {
-          let el: React.ReactNode = p.text;
-          if (p.bold) el = <strong key={idx} className="font-extrabold">{el}</strong>;
-          if (p.italic) el = <em key={idx} className="italic">{el}</em>;
           if (p.code) {
-            el = (
+            return (
               <code
                 key={idx}
                 className={`font-mono text-xs px-1.5 py-0.5 rounded ${isMe ? 'bg-indigo-700 text-indigo-100 border border-indigo-500/20' : 'bg-slate-100 text-rose-600 border border-slate-200'
                   }`}
               >
-                {el}
+                {p.text}
               </code>
             );
           }
-          return el;
+
+          let el: React.ReactNode = renderTextWithLinksAndMentions(p.text);
+          if (p.bold) el = <strong key={idx} className="font-extrabold">{el}</strong>;
+          if (p.italic) el = <em key={idx} className="italic">{el}</em>;
+          return <span key={idx}>{el}</span>;
         });
       };
 
@@ -2029,10 +2206,10 @@ export default function ChatPage() {
 
       {/* 1. Left Sidebar: Channels & DMs */}
       <aside className={`
-        fixed inset-y-0 left-0 z-45 w-64 flex flex-col shrink-0 transition-transform duration-300 md:static md:translate-x-0
+        fixed inset-y-0 left-0 z-45 w-full md:w-64 flex flex-col shrink-0 transition-all duration-300 md:static md:translate-x-0
         border-r border-slate-200 dark:border-slate-800
         bg-slate-100 text-slate-700 dark:bg-[#0b0f19] dark:text-slate-300
-        ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}
+        ${activeRoom ? (showMobileSidebar ? 'translate-x-0 w-64 shadow-2xl' : '-translate-x-full') : 'translate-x-0'}
       `}>
 
         {/* Workspace Brand Header */}
@@ -2428,20 +2605,25 @@ export default function ChatPage() {
       </aside>
 
       {/* 2. Center Feed */}
-      <section className="flex-1 bg-white dark:bg-[#070b13] flex flex-col min-w-0 shadow-inner transition-colors duration-300">
+      <section className={`flex-1 bg-white dark:bg-[#070b13] flex flex-col min-w-0 shadow-inner transition-colors duration-300 ${
+        activeRoom ? 'flex' : 'hidden md:flex'
+      }`}>
         {activeRoom ? (
           <>
             {/* Header */}
             <header className="px-4 md:px-6 py-4 border-b border-slate-200/60 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-[#0b0f19] shrink-0 transition-colors duration-300">
               <div className="overflow-hidden flex items-center gap-2.5">
-                {/* Mobile Menu Toggle */}
+                {/* Mobile Back button */}
                 <button
                   type="button"
-                  onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+                  onClick={() => {
+                    setActiveRoom(null);
+                    setShowMobileSidebar(false);
+                  }}
                   className="md:hidden p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition cursor-pointer shrink-0"
-                  title="Toggle Sidebar"
+                  title="Back to discussion list"
                 >
-                  <Menu size={18} />
+                  <ArrowLeft size={18} />
                 </button>
 
                 <div className="relative shrink-0 mr-1">
@@ -2752,11 +2934,34 @@ export default function ChatPage() {
                           <span>
                             {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
-                          {isMe && !msg.isDeleted && (
-                            <span title={isReadByOthers ? "Read by others" : "Delivered"}>
-                              <CheckCheck size={14} className={isReadByOthers ? "text-indigo-500 font-extrabold" : "text-slate-400"} />
-                            </span>
-                          )}
+                          {isMe && !msg.isDeleted && (() => {
+                            const seenBy = otherParticipants.filter((p: any) => p.lastReadAt && new Date(p.lastReadAt) >= new Date(msg.createdAt));
+                            const remaining = otherParticipants.filter((p: any) => !p.lastReadAt || new Date(p.lastReadAt) < new Date(msg.createdAt));
+                            return (
+                              <div className="relative group/receipt cursor-help flex items-center">
+                                <CheckCheck size={14} className={isReadByOthers ? "text-indigo-500 font-extrabold" : "text-slate-400"} />
+                                
+                                {/* Custom Read Receipts Hover Card */}
+                                <div className="absolute right-0 bottom-full mb-1 w-64 bg-slate-900/95 dark:bg-slate-955/95 backdrop-blur-sm text-white text-[11px] rounded-xl p-2.5 shadow-2xl border border-slate-800 z-50 hidden group-hover/receipt:block pointer-events-none transition-all duration-200">
+                                  <div className="font-extrabold text-slate-400 mb-1 border-b border-slate-850 pb-1 uppercase tracking-wider text-[9px]">
+                                    Message Status
+                                  </div>
+                                  <div className="mb-1.5">
+                                    <span className="text-emerald-400 font-extrabold block text-[9px] uppercase tracking-wide">Seen by ({seenBy.length}):</span>
+                                    <span className="text-slate-200 block leading-tight font-medium">
+                                      {seenBy.map((p: any) => p.user?.name).join(', ') || 'No one yet'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 font-extrabold block text-[9px] uppercase tracking-wide">Remaining ({remaining.length}):</span>
+                                    <span className="text-slate-355 block leading-tight font-medium">
+                                      {remaining.map((p: any) => p.user?.name).join(', ') || 'None'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                           {msg.isPinned && (
                             <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5 shadow-sm border border-indigo-100/30 dark:border-indigo-900/30">
                               <Pin size={8} /> Pinned
@@ -3033,6 +3238,27 @@ export default function ChatPage() {
                     </div>
                   )}
 
+                  {/* Uploading progress indicator */}
+                  {uploading && (
+                    <div className="bg-slate-100 dark:bg-slate-800 rounded-xl p-2.5 mb-2 flex items-center gap-3 border border-slate-200 dark:border-slate-700 animate-pulse mx-1">
+                      <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <Upload size={14} className="animate-bounce text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center mb-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          <span>Uploading Attachment...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className="bg-indigo-600 h-1.5 rounded-full transition-all duration-150" 
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <form onSubmit={handleSendMessage} className="flex gap-2 items-end">
                     <input
                       type="file"
@@ -3050,7 +3276,34 @@ export default function ChatPage() {
                       <Paperclip size={18} className={uploading ? 'animate-spin' : ''} />
                     </button>
 
-                    <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 focus-within:bg-white dark:focus-within:bg-[#070b13] rounded-xl px-4 py-2 transition flex items-end shadow-sm">
+                    <div className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 focus-within:bg-white dark:focus-within:bg-[#070b13] rounded-xl px-4 py-2 transition flex items-end shadow-sm relative">
+                      {showMentionsDropdown && mentionSuggestions.length > 0 && (
+                        <div className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl p-2.5 z-50 text-slate-800 dark:text-slate-100 max-h-48 overflow-y-auto">
+                          <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase px-2 py-1 border-b border-slate-100 dark:border-slate-800/80 mb-1.5 tracking-wider">
+                            Mention Member
+                          </div>
+                          <div className="space-y-0.5">
+                            {mentionSuggestions.map((user, idx) => {
+                              const isSelected = idx === selectedMentionIndex;
+                              return (
+                                <button
+                                  key={user.id}
+                                  type="button"
+                                  onClick={() => insertMention(user)}
+                                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-left transition cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-indigo-600 text-white font-bold shadow-sm'
+                                      : 'hover:bg-slate-100 dark:hover:bg-slate-800/70 text-slate-700 dark:text-slate-300'
+                                  }`}
+                                >
+                                  {renderAvatar(user.avatarUrl, user.name, 'w-5 h-5 text-[9px]')}
+                                  <span className="truncate flex-1">{user.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                       <textarea
                         rows={1}
                         value={newMessage}
@@ -3806,19 +4059,25 @@ export default function ChatPage() {
                   Avatar Initials
                 </label>
                 <div className="flex gap-1.5 mt-1">
-                  {avatarOptions.map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => setEditAvatarUrl(opt)}
-                      className={`w-8.5 h-8.5 rounded-full font-extrabold text-[10px] border flex items-center justify-center transition cursor-pointer ${editAvatarUrl === opt
-                        ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm scale-110'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+                  {avatarOptions.map((opt) => {
+                    const dynamicInitials = getInitials(editName || currentUser?.name || 'US');
+                    const isSelected = editAvatarUrl === opt;
+                    const bgClass = getAvatarColor(opt);
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setEditAvatarUrl(opt)}
+                        className={`w-9 h-9 rounded-full font-extrabold text-xs border flex items-center justify-center transition cursor-pointer ${bgClass} ${isSelected
+                          ? 'border-indigo-600 ring-2 ring-indigo-500 dark:ring-indigo-400 scale-110 shadow-md'
+                          : 'border-transparent opacity-80 hover:opacity-100 hover:scale-105'
+                          }`}
+                        title={`Select ${opt} color theme`}
+                      >
+                        {dynamicInitials}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
