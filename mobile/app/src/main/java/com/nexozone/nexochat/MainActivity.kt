@@ -12,6 +12,7 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
@@ -33,11 +34,6 @@ class MainActivity : AppCompatActivity() {
     private val channelId = "nexo_chat_notifications"
     private val channelName = "Nexo Chat Notifications"
 
-    private val requiredPermissions = arrayOf(
-        Manifest.permission.CAMERA,
-        Manifest.permission.RECORD_AUDIO,
-        Manifest.permission.POST_NOTIFICATIONS
-    )
     private val permissionRequestCode = 1001
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -46,7 +42,16 @@ class MainActivity : AppCompatActivity() {
 
         // Setup SwipeRefreshLayout and WebView programmatically
         swipeRefreshLayout = SwipeRefreshLayout(this)
+        swipeRefreshLayout.layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+
         webView = WebView(this)
+        webView.layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
         
         swipeRefreshLayout.addView(webView)
         setContentView(swipeRefreshLayout)
@@ -85,6 +90,21 @@ class MainActivity : AppCompatActivity() {
                     return false // Open in WebView
                 }
                 return true
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+                android.widget.Toast.makeText(
+                    this@MainActivity,
+                    "Nexo Connection Error: $description",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -132,7 +152,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkAndRequestPermissions() {
-        val permissionsToRequest = requiredPermissions.filter {
+        val permissions = mutableListOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        val permissionsToRequest = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
