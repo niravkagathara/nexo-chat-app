@@ -92,7 +92,11 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _initWebViewController() {
-    _controller = WebViewController()
+    _controller = WebViewController(
+      onPermissionRequest: (WebViewPermissionRequest request) async {
+        await request.grant();
+      },
+    )
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -119,22 +123,17 @@ class _MainScreenState extends State<MainScreen> {
         : "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 NexoChatMobile";
     _controller.setUserAgent(customUserAgent);
 
-    // Automatic granting of WebRTC permissions on Android
+    // Enable debugging on Android if applicable
     if (_controller.platform is AndroidWebViewController) {
       AndroidWebViewController.enableDebugging(true);
-      (_controller.platform as AndroidWebViewController).setPlatformNavigationDelegate(
-        AndroidNavigationDelegate(
-          onPermissionRequest: (AndroidPermissionRequest request) {
-            request.grant();
-          },
-        ),
-      );
     }
+
+
 
     // Set scroll change listener to allow pull-to-refresh only when at the top
     _controller.setOnScrollPositionChange((ScrollPositionChange change) {
       setState(() {
-        _scrollY = change.y;
+        _scrollY = change.y.toInt();
       });
     });
 
@@ -152,7 +151,7 @@ class _MainScreenState extends State<MainScreen> {
 
   // Inject a compatibility layer that exposes `window.AndroidBridge` exactly as expected
   void _injectJavascriptBridge() {
-    final String jsCode = '''
+    const String jsCode = '''
       window.AndroidBridge = {
         toggleSpeaker: function(useLoudspeaker) {
           AndroidBridgeChannel.postMessage(JSON.stringify({action: 'toggleSpeaker', value: useLoudspeaker}));
