@@ -3571,8 +3571,8 @@ export default function ChatPage() {
                 <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-left">Quick Actions</h3>
                 <div className={`grid grid-cols-1 gap-4 ${
                   (currentUser?.role === 'admin' || currentUser?.role === 'superadmin')
-                    ? 'sm:grid-cols-2 lg:grid-cols-4'
-                    : 'sm:grid-cols-3'
+                    ? 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
+                    : 'sm:grid-cols-2 md:grid-cols-4'
                 }`}>
                   <button
                     onClick={() => {
@@ -3620,6 +3620,18 @@ export default function ChatPage() {
                     <h4 className="font-extrabold text-sm mb-1">Update Profile</h4>
                     <p className="text-[11px] opacity-80 leading-normal">Edit your display name, status, or avatar image.</p>
                   </button>
+
+                  <a
+                    href="/nexo-chat-mobile.apk"
+                    download
+                    className="group bg-white dark:bg-[#0b0f19] hover:bg-indigo-600 dark:hover:bg-indigo-600 border border-slate-200/60 dark:border-slate-800 p-5 rounded-2xl text-left shadow-sm hover:shadow-lg transition cursor-pointer hover:border-indigo-600 dark:hover:border-indigo-600 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition mb-3">
+                      <Download size={16} />
+                    </div>
+                    <h4 className="font-extrabold text-sm mb-1">Android App</h4>
+                    <p className="text-[11px] opacity-80 leading-normal">Download the mobile APK to install Nexo Chat on your phone.</p>
+                  </a>
 
                   {(currentUser?.role === 'admin' || currentUser?.role === 'superadmin') && (
                     <button
