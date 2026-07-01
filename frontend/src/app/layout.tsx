@@ -1,19 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import ConnectionStatus from "../components/ConnectionStatus";
 import GoogleAnalytics from "../components/GoogleAnalytics";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const geistSans = {
+  variable: "font-sans",
+};
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistMono = {
+  variable: "font-mono",
+};
 
 const APP_URL = "https://www.nexochat.in";
 

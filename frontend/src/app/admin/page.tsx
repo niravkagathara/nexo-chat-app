@@ -862,7 +862,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      <div className="pt-4 border-t border-slate-800/60 mt-4">
+                      <div className="pt-4 border-t border-slate-100 mt-4">
                         <button
                           onClick={async () => {
                             if (!token) return;
@@ -1267,7 +1267,7 @@ export default function AdminDashboard() {
                                               {member.name.substring(0, 2).toUpperCase()}
                                             </div>
                                             <div>
-                                              <span className="font-bold text-slate-200 block">{member.name}</span>
+                                              <span className="font-bold text-slate-800 block">{member.name}</span>
                                               <span className="text-[9px] text-slate-500">ID: {member.id}</span>
                                             </div>
                                           </div>
@@ -1395,10 +1395,10 @@ export default function AdminDashboard() {
                             {formatBytes(file.fileSize)}
                           </span>
 
-                          <div className="space-y-2 text-xs border-t border-slate-800/60 pt-3">
+                          <div className="space-y-2 text-xs border-t border-slate-100 pt-3">
                             <div className="flex justify-between">
                               <span className="text-slate-500">Uploaded By:</span>
-                              <span className="text-slate-300 font-semibold truncate max-w-[120px]" title={file.uploader?.name}>
+                              <span className="text-slate-700 font-semibold truncate max-w-[120px]" title={file.uploader?.name}>
                                 {file.uploader?.name || 'Deleted User'}
                               </span>
                             </div>
@@ -1482,11 +1482,11 @@ export default function AdminDashboard() {
                           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                             {/* Left: Session ID + Room */}
                             <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 shrink-0">
+                              <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-indigo-650 shrink-0">
                                 <Video size={18} />
                               </div>
                               <div>
-                                <span className="font-extrabold text-white text-sm block">
+                                <span className="font-extrabold text-slate-800 text-sm block">
                                   {call.room?.name || `Room ${call.roomId}`}
                                   <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold ml-2">
                                     ({call.room?.isGroup ? 'Group Channel' : 'DM'})
@@ -1498,7 +1498,7 @@ export default function AdminDashboard() {
 
                             {/* Right: Status Badge + Duration */}
                             <div className="flex items-center gap-3 shrink-0">
-                              <div className="flex items-center gap-1.5 text-slate-300 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl">
+                              <div className="flex items-center gap-1.5 text-slate-700 text-xs font-mono font-bold bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
                                 <Clock size={12} className="text-slate-500" />
                                 <span>{call.duration}s</span>
                               </div>
@@ -1509,7 +1509,7 @@ export default function AdminDashboard() {
                           </div>
 
                           {/* Details Row */}
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-800/60">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
                             {/* Started by */}
                             <div>
                               <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider block mb-1.5">Started By</span>
@@ -1530,7 +1530,7 @@ export default function AdminDashboard() {
                                 {participants.length > 0 ? participants.map((p, idx) => (
                                   <span
                                     key={idx}
-                                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 bg-slate-800/80 border border-slate-700/50 rounded-full text-slate-300"
+                                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-full text-slate-655"
                                     title={p.joinedAt ? `Joined: ${formatDate(p.joinedAt)}` : ''}
                                   >
                                     <span>{p.name}</span>
@@ -1550,11 +1550,11 @@ export default function AdminDashboard() {
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2 text-xs">
                                   <span className="text-slate-500 w-14 shrink-0">Started:</span>
-                                  <span className="text-slate-300 font-semibold">{formatDate(call.createdAt)}</span>
+                                  <span className="text-slate-700 font-semibold">{formatDate(call.createdAt)}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs">
                                   <span className="text-slate-500 w-14 shrink-0">Ended:</span>
-                                  <span className={call.endedAt ? 'text-slate-300 font-semibold' : 'text-slate-600 italic'}>
+                                  <span className={call.endedAt ? 'text-slate-700 font-semibold' : 'text-slate-600 italic'}>
                                     {call.endedAt ? formatDate(call.endedAt) : '—'}
                                   </span>
                                 </div>
@@ -1577,15 +1577,15 @@ export default function AdminDashboard() {
             {activeTab === 'permissions' && currentUser?.role === 'superadmin' && (
               <div className="space-y-6 animate-fade-in">
                 <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 dark:border-slate-800/80 rounded-2xl p-6 shadow-xs">
-                  <h3 className="font-extrabold text-white text-base flex items-center gap-2 mb-4">
+                  <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2 mb-4">
                     <Shield size={18} className="text-indigo-400" />
                     Configure Admin Role Permissions
                   </h3>
-                  <p className="text-slate-400 text-xs mb-6">
+                  <p className="text-slate-500 text-xs mb-6">
                     Configure action-level privileges for standard administrators. Superadmins always have full dynamic access.
                   </p>
 
-                  <div className="divide-y divide-slate-800/60 space-y-4">
+                  <div className="divide-y divide-slate-100 space-y-4">
                     {[
                       { action: 'manage_users', label: 'User Directory Management', desc: 'Allows adding new users, modifying profiles, resetting passwords, and deleting standard accounts.' },
                       { action: 'manage_rooms', label: 'Rooms & Channels Management', desc: 'Allows deleting groups/rooms, adding or removing members, and promoting/demoting room admins.' },
@@ -1598,9 +1598,9 @@ export default function AdminDashboard() {
                       return (
                         <div key={action} className="flex items-start justify-between py-4 first:pt-0 last:pb-0 gap-6">
                           <div className="space-y-1">
-                            <span className="text-sm font-extrabold text-slate-200 block">{label}</span>
+                            <span className="text-sm font-extrabold text-slate-800 block">{label}</span>
                             <span className="text-xs text-slate-500 block max-w-xl">{desc}</span>
-                            <span className="text-[10px] text-indigo-400/80 font-mono block">Action ID: {action}</span>
+                            <span className="text-[10px] text-indigo-650/80 font-mono block">Action ID: {action}</span>
                           </div>
 
                           <label className="relative inline-flex items-center cursor-pointer select-none">
@@ -1614,7 +1614,7 @@ export default function AdminDashboard() {
                               }}
                               className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-slate-800 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500/20 dark:peer-focus:ring-indigo-600/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white peer-checked:after:border-white" />
+                            <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white peer-checked:after:border-white" />
                           </label>
                         </div>
                       );
@@ -1631,15 +1631,15 @@ export default function AdminDashboard() {
       {/* ── MODAL: EDIT USER ───────────────────────────────────────────────────── */}
       {showEditUserModal && selectedUser && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <Edit size={16} className="text-indigo-400" />
                 Edit Workspace User
               </h3>
               <button
                 onClick={() => setShowEditUserModal(false)}
-                className="text-slate-500 hover:text-white transition cursor-pointer text-xs font-bold"
+                className="text-slate-400 hover:text-slate-600 transition cursor-pointer text-xs font-bold"
               >
                 ✕
               </button>
@@ -1647,7 +1647,7 @@ export default function AdminDashboard() {
 
             <form onSubmit={handleEditUser} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   Display Name
                 </label>
                 <input
@@ -1655,12 +1655,12 @@ export default function AdminDashboard() {
                   required
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   Email Address
                 </label>
                 <input
@@ -1668,19 +1668,19 @@ export default function AdminDashboard() {
                   required
                   value={editEmail}
                   onChange={e => setEditEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   Security Role
                 </label>
                 <select
                   value={editRole}
                   disabled={currentUser?.role !== 'superadmin'}
                   onChange={e => setEditRole(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="user">User (Regular Participant)</option>
                   <option value="admin">Admin (Channel and File manager)</option>
@@ -1716,15 +1716,15 @@ export default function AdminDashboard() {
       {/* ── MODAL: RESET PASSWORD ─────────────────────────────────────────────── */}
       {showResetPasswordModal && selectedUser && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <Key size={16} className="text-amber-400" />
                 Force Reset Password
               </h3>
               <button
                 onClick={() => setShowResetPasswordModal(false)}
-                className="text-slate-500 hover:text-white transition cursor-pointer text-xs font-bold"
+                className="text-slate-400 hover:text-slate-600 transition cursor-pointer text-xs font-bold"
               >
                 ✕
               </button>
@@ -1736,7 +1736,7 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   New Password
                 </label>
                 <input
@@ -1745,7 +1745,7 @@ export default function AdminDashboard() {
                   placeholder="Min 6 characters"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1777,15 +1777,15 @@ export default function AdminDashboard() {
       {/* ── MODAL: DELETE USER ─────────────────────────────────────────────────── */}
       {showDeleteUserModal && selectedUser && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <AlertCircle size={16} className="text-rose-500" />
                 Delete User Account
               </h3>
               <button
                 onClick={() => setShowDeleteUserModal(false)}
-                className="text-slate-500 hover:text-white transition cursor-pointer text-xs font-bold"
+                className="text-slate-400 hover:text-slate-600 transition cursor-pointer text-xs font-bold"
               >
                 ✕
               </button>
@@ -1821,15 +1821,15 @@ export default function AdminDashboard() {
       {/* ── MODAL: DELETE ROOM ─────────────────────────────────────────────────── */}
       {showDeleteRoomModal && selectedRoom && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <AlertCircle size={16} className="text-rose-500" />
                 Delete Discussion Room
               </h3>
               <button
                 onClick={() => setShowDeleteRoomModal(false)}
-                className="text-slate-500 hover:text-white transition cursor-pointer text-xs font-bold"
+                className="text-slate-400 hover:text-slate-600 transition cursor-pointer text-xs font-bold"
               >
                 ✕
               </button>
@@ -1865,15 +1865,15 @@ export default function AdminDashboard() {
       {/* ── MODAL: DELETE FILE ─────────────────────────────────────────────────── */}
       {showDeleteFileModal && selectedFile && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <AlertCircle size={16} className="text-rose-500" />
                 Delete Shared File
               </h3>
               <button
                 onClick={() => setShowDeleteFileModal(false)}
-                className="text-slate-500 hover:text-white transition cursor-pointer text-xs font-bold"
+                className="text-slate-400 hover:text-slate-600 transition cursor-pointer text-xs font-bold"
               >
                 ✕
               </button>
@@ -1909,15 +1909,15 @@ export default function AdminDashboard() {
       {/* ── MODAL: ADD USER ────────────────────────────────────────────────────── */}
       {showAddUserModal && (
         <div className="fixed inset-0 z-50 bg-[#070b13]/85 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
-            <div className="bg-slate-900/40 px-6 py-4 border-b border-slate-200 dark:border-slate-800/80 flex justify-between items-center">
+          <div className="bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-200 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2">
                 <Users size={16} className="text-indigo-400" />
                 Create New User
               </h3>
               <button
                 onClick={() => setShowAddUserModal(false)}
-                className="text-slate-500 hover:text-white transition cursor-pointer text-xs font-bold"
+                className="text-slate-400 hover:text-slate-600 transition cursor-pointer text-xs font-bold"
               >
                 ✕
               </button>
@@ -1925,7 +1925,7 @@ export default function AdminDashboard() {
 
             <form onSubmit={handleAddUser} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   Display Name
                 </label>
                 <input
@@ -1934,12 +1934,12 @@ export default function AdminDashboard() {
                   placeholder="e.g. John Doe"
                   value={addName}
                   onChange={e => setAddName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   Email Address
                 </label>
                 <input
@@ -1948,12 +1948,12 @@ export default function AdminDashboard() {
                   placeholder="e.g. john@example.com"
                   value={addEmail}
                   onChange={e => setAddEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   Password
                 </label>
                 <input
@@ -1962,12 +1962,12 @@ export default function AdminDashboard() {
                   placeholder="Min 6 characters"
                   value={addPassword}
                   onChange={e => setAddPassword(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                   Security Role
                 </label>
                 <select
