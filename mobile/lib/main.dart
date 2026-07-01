@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'socket_service.dart';
 
 @pragma('vm:entry-point')
@@ -156,6 +157,31 @@ class _MainScreenState extends State<MainScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Nexo Connection Error: ${error.description}')),
             );
+          },
+          onNavigationRequest: (NavigationRequest request) async {
+            final String url = request.url.toLowerCase();
+            // Intercept downloads, APKs, Zips, IPA files, Exe files, PDF files, backups, and uploads
+            if (url.contains('/uploads/') ||
+                url.contains('backup') ||
+                url.endsWith('.apk') ||
+                url.endsWith('.zip') ||
+                url.endsWith('.ipa') ||
+                url.endsWith('.exe') ||
+                url.endsWith('.pdf')) {
+              try {
+                final Uri uri = Uri.parse(request.url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(
+                    uri,
+                    mode: LaunchMode.externalApplication,
+                  );
+                  return NavigationDecision.prevent;
+                }
+              } catch (e) {
+                debugPrint('Error launching external URL: $e');
+              }
+            }
+            return NavigationDecision.navigate;
           },
         ),
       );
