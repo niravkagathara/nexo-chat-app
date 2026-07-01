@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../prisma.service';
+import { FcmService } from './fcm.service';
 
 @WebSocketGateway({
   cors: {
@@ -39,6 +40,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private chatService: ChatService,
     private prisma: PrismaService,
+    private fcmService: FcmService,
   ) {}
 
   handleConnection(client: Socket) {
@@ -211,6 +213,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const savedMsg = await this.chatService.saveMessage(data);
     this.server.to(`room_${data.roomId}`).emit('roomMessage', savedMsg);
+
+    try {
+      this.sendRoomPushNotifications(data.roomId, data.userId, savedMsg);
+    } catch (e) {
+      console.error('Failed to send push notifications:', e);
+    }
   }
 
   @SubscribeMessage('editMessage')
@@ -323,6 +331,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId: data.callerId,
     });
     this.server.to(`room_${data.roomId}`).emit('roomMessage', savedMsg);
+
+    try {
+      this.sendRoomPushNotifications(data.roomId, data.callerId, savedMsg);
+    } catch (e) {
+      console.error('Failed to send call push notifications:', e);
+    }
   }
 
   @SubscribeMessage('endCallSession')
@@ -411,5 +425,43 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('clearChatHistory')
   handleClearChatHistory(@MessageBody() data: { roomId: number }) {
     this.server.to(`room_${data.roomId}`).emit('chatHistoryCleared', { roomId: data.roomId });
+  }
+
+  private async sendRoomPushNotifications(roomId: number, senderId: number, message: any) {
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+      include: {
+        participants: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!room) return;
+
+    const senderName = message.user?.name || 'Someone';
+    const notificationTitle = room.isGroup
+      ? `${room.name || 'Group Chat'} — ${senderName}`
+      : senderName;
+
+    for (const participant of room.participants) {
+      const recipient = participant.user;
+      if (recipient.id === senderId) continue;
+
+      if (recipient.fcmToken) {
+        this.fcmService.sendPushNotification(
+          recipient.fcmToken,
+          notificationTitle,
+          message.content,
+          {
+            roomId: roomId.toString(),
+            senderId: senderId.toString(),
+            messageId: message.id.toString(),
+          },
+        );
+      }
+    }
   }
 }

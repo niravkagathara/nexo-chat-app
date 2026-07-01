@@ -18,6 +18,7 @@ model User {
   role              String        @default("user")
   resetCode         String?
   resetCodeExpiry   DateTime?
+  fcmToken          String?
   createdAt         DateTime      @default(now())
   messages          Message[]
   rooms             Participant[]

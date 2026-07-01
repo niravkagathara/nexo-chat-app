@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1051622546939",
+    "project_id": "nexochat-49cf6",
+    "storage_bucket": "nexochat-49cf6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051622546939:android:aee38fd36f01e03e48bf5e",
+        "android_client_info": {
+          "package_name": "com.nexozone.nexochat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCL3WeYMWA5neJgfqB4gZvfF2zPr_uEcmo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

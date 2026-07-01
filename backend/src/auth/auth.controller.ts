@@ -102,6 +102,21 @@ export class AuthController {
     return this.authService.deleteAccount(user.id);
   }
 
+  // ─── Update FCM Token ────────────────────────────────────────────────────────
+  @Post('fcm-token')
+  async updateFcmToken(@Headers('authorization') authHeader: string, @Body() body: any) {
+    if (!authHeader?.startsWith('Bearer ')) throw new UnauthorizedException('No token provided');
+    const token = authHeader.split(' ')[1];
+    const user = await this.authService.verifyToken(token);
+    if (!user) throw new UnauthorizedException('Invalid token');
+    
+    const { fcmToken } = body;
+    if (!fcmToken) throw new BadRequestException('fcmToken is required');
+    
+    await this.authService.updateFcmToken(user.id, fcmToken);
+    return { success: true };
+  }
+
   // ─── Google OAuth — initiate ─────────────────────────────────────────────────
   @Get('google')
   @UseGuards(GoogleAuthGuard)

@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -10,8 +13,28 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'socket_service.dart';
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    
+    // Request permission for push notifications
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  } catch (e) {
+    // ignore
+  }
   
   // Initialize local notifications
   const AndroidInitializationSettings initializationSettingsAndroid =
@@ -26,7 +49,7 @@ void main() async {
     android: initializationSettingsAndroid,
     iOS: initializationSettingsIOS,
   );
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
 
   // Initialize background service configurations
   await initializeBackgroundService();
@@ -81,6 +104,26 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _checkAndRequestPermissions();
     _initWebViewController();
+    _registerFcmTokenIfLoggedIn();
+    _setupForegroundNotifications();
+  }
+
+  void _setupForegroundNotifications() {
+    FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final notification = message.notification;
+      if (notification != null) {
+        _showLocalNotification(
+          notification.title ?? 'New Message',
+          notification.body ?? '',
+        );
+      }
+    });
   }
 
   Future<void> _checkAndRequestPermissions() async {
@@ -199,6 +242,17 @@ class _MainScreenState extends State<MainScreen> {
           await prefs.setInt("userId", userId);
           await prefs.setString("userName", userName);
 
+          // Fetch and register FCM Token
+          try {
+            final String? fcmToken = await FirebaseMessaging.instance.getToken();
+            if (fcmToken != null) {
+              await prefs.setString("fcmToken", fcmToken);
+              _sendFcmTokenToBackend(fcmToken, token);
+            }
+          } catch (e) {
+            // ignore
+          }
+
           // Start the background socket service
           final backgroundService = FlutterBackgroundService();
           if (!await backgroundService.isRunning()) {
@@ -236,10 +290,10 @@ class _MainScreenState extends State<MainScreen> {
         NotificationDetails(android: androidDetails, iOS: iosDetails);
     
     await flutterLocalNotificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title,
-      body,
-      platformDetails,
+      id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title: title,
+      body: body,
+      notificationDetails: platformDetails,
     );
   }
 
@@ -285,5 +339,42 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _registerFcmTokenIfLoggedIn() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString("token");
+      if (token != null) {
+        final String? fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          _sendFcmTokenToBackend(fcmToken, token);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  Future<void> _sendFcmTokenToBackend(String fcmToken, String authToken) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.nexochat.in/auth/fcm-token'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: jsonEncode({
+          'fcmToken': fcmToken,
+        }),
+      );
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        debugPrint('[Success] Registered FCM Token on server');
+      } else {
+        debugPrint('[Error] Failed to register FCM Token: ${response.statusCode} — ${response.body}');
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 }

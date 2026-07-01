@@ -34,8 +34,12 @@ Future<void> initializeBackgroundService() async {
   await service.configure(
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
-      autoStart: false, // Started programmatically after login
-      isForegroundMode: false, // Runs as a silent background service
+      autoStart: true, // Auto start on boot to check login status
+      isForegroundMode: true,
+      notificationChannelId: channelId,
+      initialNotificationTitle: 'Nexo Chat',
+      initialNotificationContent: 'Connecting to server...',
+      foregroundServiceNotificationId: 888,
     ),
     iosConfiguration: IosConfiguration(
       autoStart: false,
@@ -75,10 +79,10 @@ void onStart(ServiceInstance service) async {
         NotificationDetails(android: androidDetails, iOS: iosDetails);
     
     await flutterLocalNotificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title,
-      body,
-      platformDetails,
+      id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title: title,
+      body: body,
+      notificationDetails: platformDetails,
     );
   }
 
@@ -125,6 +129,22 @@ void onStart(ServiceInstance service) async {
       });
 
       fetchAndJoinRooms(token, userId, userName);
+
+      if (service is AndroidServiceInstance) {
+        service.setForegroundNotificationInfo(
+          title: "Nexo Chat",
+          content: "Online - Connected",
+        );
+      }
+    });
+
+    socket!.onDisconnect((_) {
+      if (service is AndroidServiceInstance) {
+        service.setForegroundNotificationInfo(
+          title: "Nexo Chat",
+          content: "Connecting to server...",
+        );
+      }
     });
 
     socket!.on('newMessage', (data) {
@@ -170,6 +190,9 @@ void onStart(ServiceInstance service) async {
 
   if (token != null && userId != -1) {
     connectSocket(token, userId, userName);
+  } else {
+    // If user is not logged in, stop the service to save battery/resources
+    service.stopSelf();
   }
 
   service.on('stopService').listen((event) {
