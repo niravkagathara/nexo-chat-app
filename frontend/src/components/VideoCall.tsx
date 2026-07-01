@@ -220,6 +220,15 @@ export const VideoCall: React.FC<VideoCallProps> = ({
   const [callStatus, setCallStatus] = useState<string>('Initializing...');
   const [isCallAccepted, setIsCallAccepted] = useState(autoAccept || !isIncoming);
 
+  const isBackCamera = () => {
+    if (!localStream) return false;
+    const track = localStream.getVideoTracks()[0];
+    if (!track) return false;
+    const label = track.label.toLowerCase();
+    const settings = track.getSettings();
+    return label.includes('back') || label.includes('rear') || label.includes('environment') || settings.facingMode === 'environment';
+  };
+
   // Camera Switching States
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [currentVideoDeviceId, setCurrentVideoDeviceId] = useState<string>('');
@@ -1331,7 +1340,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
                     autoPlay
                     playsInline
                     muted
-                    className={`w-full h-full ${isScreenSharing ? 'object-contain bg-black' : 'object-cover scale-x-[-1]'}`}
+                    className={`w-full h-full ${isScreenSharing ? 'object-contain bg-black' : `object-cover ${isBackCamera() ? '' : 'scale-x-[-1]'}`}`}
                   />
                 )}
                 <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-white text-[9px] font-bold">
@@ -1348,7 +1357,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover scale-x-[-1]"
+                  className={`w-full h-full object-cover ${isBackCamera() ? '' : 'scale-x-[-1]'}`}
                 />
               </div>
             )}
@@ -1510,7 +1519,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
                             autoPlay
                             playsInline
                             muted
-                            className="w-full h-full object-cover scale-x-[-1]"
+                            className={`w-full h-full object-cover ${isBackCamera() ? '' : 'scale-x-[-1]'}`}
                           />
                         )}
                         <div className="absolute bottom-1 left-1 bg-black/60 px-1.5 py-0.5 rounded text-white text-[8px] font-bold">
@@ -1578,7 +1587,7 @@ export const VideoCall: React.FC<VideoCallProps> = ({
                           autoPlay
                           playsInline
                           muted
-                          className={`w-full h-full bg-black ${isScreenSharing ? 'object-contain' : 'object-cover scale-x-[-1]'}`}
+                          className={`w-full h-full bg-black ${isScreenSharing ? 'object-contain' : `object-cover ${isBackCamera() ? '' : 'scale-x-[-1]'}`}`}
                         />
                         {isScreenSharing && (
                           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition z-10 flex gap-2">

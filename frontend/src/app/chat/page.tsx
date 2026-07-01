@@ -98,6 +98,7 @@ export default function ChatPage() {
   const [editPassword, setEditPassword] = useState('');
   const [editAvatarUrl, setEditAvatarUrl] = useState('');
   const [editStatus, setEditStatus] = useState('online');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [editStatusMsg, setEditStatusMsg] = useState('');
   const [showPwd, setShowPwd] = useState(false);
 
@@ -130,34 +131,17 @@ export default function ChatPage() {
   const [newRoomAvatarUrl, setNewRoomAvatarUrl] = useState('');
   const [groupAvatarInput, setGroupAvatarInput] = useState('');
 
-  // Theme states
+  // Theme states (forced light mode)
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('nexo_theme') as 'light' | 'dark' | null;
-    let activeTheme: 'light' | 'dark' = 'light';
-    if (savedTheme) {
-      activeTheme = savedTheme;
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      activeTheme = 'dark';
-    }
-    setTheme(activeTheme);
+    localStorage.setItem('nexo_theme', 'light');
+    document.documentElement.classList.remove('dark');
+    document.body.style.backgroundColor = '#f1f5f9';
   }, []);
 
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.body.style.backgroundColor = '#0b0f19';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = '#f1f5f9';
-    }
-  }, [theme]);
-
   const toggleTheme = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(nextTheme);
-    localStorage.setItem('nexo_theme', nextTheme);
+    // Light mode only
   };
 
   // Emoji Picker state
@@ -356,7 +340,12 @@ export default function ChatPage() {
   // Scroll to bottom helper
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typingUsers]);
+    // Retry with small timeout to handle width transition adjustments
+    const timer = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [messages, typingUsers, showRightPanel]);
 
   // Register user with socket server immediately on connect
   useEffect(() => {
@@ -2211,17 +2200,19 @@ export default function ChatPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-rose-500'} border-2 border-slate-200/50 dark:border-[#070b13] animate-pulse`}></span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMobileSidebar(false);
-              }}
-              className="md:hidden p-1.5 hover:bg-slate-400 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition cursor-pointer flex items-center justify-center"
-              title="Close Sidebar"
-            >
-              <X size={16} />
-            </button>
+            {showMobileSidebar && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMobileSidebar(false);
+                }}
+                className="p-1.5 bg-slate-200 dark:bg-slate-850 hover:bg-slate-300 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white transition cursor-pointer flex items-center justify-center border border-slate-300 dark:border-slate-700"
+                title="Close Sidebar"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -2557,13 +2548,7 @@ export default function ChatPage() {
                     <Shield size={14} />
                   </button>
                 )}
-                <button
-                  onClick={toggleTheme}
-                  title="Toggle Theme"
-                  className="text-slate-500 hover:text-slate-800 dark:hover:text-white p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
-                >
-                  {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
-                </button>
+                {/* Theme toggle removed for light-only mode */}
                 <button
                   onClick={() => setShowEditProfile(true)}
                   title="Edit Profile"
@@ -2699,17 +2684,7 @@ export default function ChatPage() {
                   </div>
                 )}
 
-                {/* Theme toggle - Visible everywhere */}
-                <button
-                  onClick={toggleTheme}
-                  className={`p-2 rounded-full transition cursor-pointer ${theme === 'dark'
-                    ? 'text-amber-400 hover:bg-slate-800'
-                    : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  title="Toggle theme"
-                >
-                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-                </button>
+                {/* Theme toggle removed for light-only mode */}
 
                 {/* Right panel toggle - Desktop */}
                 <button
@@ -3069,7 +3044,7 @@ export default function ChatPage() {
 
                         {/* Float Action Menu (Emoji, Edit, Delete, Reply, Copy) */}
                         {!msg.isDeleted && (
-                          <div className={`opacity-0 group-hover:opacity-100 transition duration-150 absolute top-[-15px] flex bg-white border border-slate-200 shadow-md rounded-full px-2.5 py-1 gap-2 z-10 ${isMe ? 'left-4' : 'right-4'
+                          <div className={`opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition duration-150 absolute top-[-15px] flex bg-white border border-slate-200 shadow-md rounded-full px-2.5 py-1 gap-2 z-10 ${isMe ? 'left-4' : 'right-4'
                             }`}>
                             {['👍', '🔥', '❤️', '👏'].map((emoji) => (
                               <button
@@ -3348,15 +3323,7 @@ export default function ChatPage() {
             <div className="max-w-2xl w-full space-y-8 animate-scale-up text-center md:text-left">
               {/* Header Greeting */}
               <div className="bg-white/80 dark:bg-[#0b0f19]/80 backdrop-blur-md rounded-3xl p-8 border border-slate-200/60 dark:border-slate-800 shadow-xl shadow-slate-100/50 dark:shadow-slate-950/20 flex flex-col md:flex-row items-center gap-6 relative">
-                {/* Theme Toggle Button */}
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="absolute top-6 right-6 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-indigo-600 dark:text-amber-400 transition cursor-pointer shadow-2xs"
-                  title="Toggle Theme"
-                >
-                  {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-                </button>
+                {/* Theme toggle removed for light-only mode */}
 
                 <div className="flex items-center w-full md:w-auto justify-between md:justify-start">
                   <button
@@ -3713,7 +3680,7 @@ export default function ChatPage() {
                       </div>
                     </div>
                     {isCurrentUserAdmin && user.id !== currentUser.id && (
-                      <div className="opacity-0 group-hover/member:opacity-100 flex items-center gap-0.5 shrink-0">
+                      <div className="opacity-100 md:opacity-0 md:group-hover/member:opacity-100 flex items-center gap-0.5 shrink-0">
                         <button
                           onClick={() => handleToggleAdminStatus(user.id)}
                           className="text-[9px] font-bold text-slate-400 hover:text-indigo-600 px-1 py-0.5 rounded hover:bg-slate-200/50 cursor-pointer"
@@ -4066,12 +4033,28 @@ export default function ChatPage() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Or Upload Custom Profile Picture
                 </label>
+                {editAvatarUrl && (editAvatarUrl.startsWith('/') || editAvatarUrl.startsWith('http')) && (
+                  <div className="mb-2 flex items-center gap-2 bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700 animate-fade-in">
+                    <img
+                      src={editAvatarUrl.startsWith('/') ? `${API_URL}${editAvatarUrl}` : editAvatarUrl}
+                      alt="Uploaded Avatar"
+                      className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                    />
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">✓ Picture uploaded</span>
+                  </div>
+                )}
+                {isUploadingAvatar && (
+                  <div className="mb-2 text-xs text-indigo-600 dark:text-indigo-400 animate-pulse font-bold">
+                    Uploading photo... Please wait.
+                  </div>
+                )}
                 <input
                   type="file"
                   accept="image/*"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
+                    setIsUploadingAvatar(true);
                     const formData = new FormData();
                     formData.append('file', file);
                     try {
@@ -4082,9 +4065,14 @@ export default function ChatPage() {
                       const data = await res.json();
                       if (res.ok) {
                         setEditAvatarUrl(data.fileUrl);
+                      } else {
+                        alert(data.message || 'Failed to upload photo');
                       }
                     } catch (err) {
                       console.error(err);
+                      alert('Upload failed due to connection error');
+                    } finally {
+                      setIsUploadingAvatar(false);
                     }
                   }}
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"

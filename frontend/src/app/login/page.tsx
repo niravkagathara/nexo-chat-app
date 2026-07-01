@@ -46,21 +46,19 @@ function LoginPageInner() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   const strength = mode === 'register' ? getPasswordStrength(password) : getPasswordStrength(newPassword);
 
   // Theme setup
   useEffect(() => {
-    const saved = (localStorage.getItem('nexo_theme') || localStorage.getItem('nexo_landing_theme')) as 'light' | 'dark' | null;
-    const active = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(active);
+    setTheme('light');
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    document.body.style.backgroundColor = theme === 'dark' ? '#0b0f19' : '#f8fafc';
-    localStorage.setItem('nexo_theme', theme);
+    document.documentElement.classList.remove('dark');
+    document.body.style.backgroundColor = '#f8fafc';
+    localStorage.setItem('nexo_theme', 'light');
   }, [theme]);
 
   // Redirect if already logged in
@@ -234,15 +232,7 @@ function LoginPageInner() {
       {/* ── Right panel: Forms ───────────────────────────────────────────────── */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-20 py-12 bg-white dark:bg-[#070b13] relative overflow-y-auto">
 
-        {/* Theme toggle */}
-        <button
-          type="button"
-          onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
-          className="absolute top-6 right-6 p-2.5 rounded-xl border transition-all cursor-pointer border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-amber-400 shadow-sm"
-          title="Toggle Theme"
-        >
-          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-        </button>
+        {/* Theme toggle removed for light-only mode */}
 
         <div className="max-w-md w-full mx-auto space-y-7">
 

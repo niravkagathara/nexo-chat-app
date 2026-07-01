@@ -26,31 +26,17 @@ export default function LandingPage() {
     }
 
     // 2. Check saved theme
-    const savedTheme = localStorage.getItem('nexo_theme') as 'light' | 'dark' | null;
-    let activeTheme: 'light' | 'dark' = 'light';
-    if (savedTheme) {
-      activeTheme = savedTheme;
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      activeTheme = 'dark';
-    }
-    setTheme(activeTheme);
+    localStorage.setItem('nexo_theme', 'light');
   }, []);
 
   // Sync background color to document body to avoid white/dark space issues below footer
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.body.style.backgroundColor = '#060814';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = '#f8fafc'; // slate-50
-    }
+    document.documentElement.classList.remove('dark');
+    document.body.style.backgroundColor = '#f8fafc'; // slate-50
   }, [theme]);
 
   const toggleTheme = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(nextTheme);
-    localStorage.setItem('nexo_theme', nextTheme);
+    // Disabled - light mode only
   };
 
   const handleCTA = () => {
@@ -97,17 +83,7 @@ export default function LandingPage() {
             </nav>
 
             <div className="flex items-center gap-4">
-              {/* Theme Toggle Button */}
-              <button
-                onClick={toggleTheme}
-                className={`p-2.5 rounded-xl border transition-all duration-300 cursor-pointer active:scale-95 ${theme === 'dark'
-                    ? 'border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-amber-400 hover:text-amber-300'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-indigo-600 hover:text-indigo-800 shadow-2xs'
-                  }`}
-                aria-label="Toggle Theme"
-              >
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-              </button>
+              {/* Theme toggle button removed for light-only mode */}
 
               {/* Desktop App Download Button */}
               <a

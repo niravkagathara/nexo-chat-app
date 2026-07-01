@@ -51,28 +51,12 @@ export default function AdminDashboard() {
   const [showAdminMobileSidebar, setShowAdminMobileSidebar] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('nexo_theme') as 'light' | 'dark' | null;
-    let activeTheme: 'light' | 'dark' = 'light';
-    if (savedTheme) {
-      activeTheme = savedTheme;
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      activeTheme = 'dark';
-    }
-    setTheme(activeTheme);
+    localStorage.setItem('nexo_theme', 'light');
+    document.documentElement.classList.remove('dark');
   }, []);
 
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
   const toggleTheme = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(nextTheme);
-    localStorage.setItem('nexo_theme', nextTheme);
+    // Light mode only
   };
 
   const getInitials = (name: string) => {
@@ -704,13 +688,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center justify-center gap-2 mb-2 py-2 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
-          >
-            {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
-            <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
-          </button>
+          {/* Theme toggler removed for light-only mode */}
 
           <button
             onClick={() => {
