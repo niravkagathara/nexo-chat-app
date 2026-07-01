@@ -19,3 +19,10 @@ yarn-error.log*
 *.exe
 *.zip
 
+# Flutter / Dart build artifacts
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+*.hprof
+
