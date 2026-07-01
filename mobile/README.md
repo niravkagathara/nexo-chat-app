@@ -1,31 +1,35 @@
-# Nexo Chat Mobile App (Android WebView)
+# Nexo Chat Mobile App (Flutter WebView Wrapper)
 
-This directory contains the native Android WebView application for Nexo Chat.
+This directory contains the cross-platform Flutter WebView application for Nexo Chat.
 
 ## Features
-1. **WebView wrapper**: Integrates the Nexo Chat Next.js web application directly inside a native WebView container.
-2. **WebRTC Integration**: Automatically checks, requests, and grants camera/microphone permissions for voice & video call capabilities.
-3. **Notification Support**: Automatically requests push and local notification permission permissions.
-4. **App Launcher Icon**: Configured with professional square and circular launchers (`ic_launcher.png` and `ic_launcher_round.png`) generated directly from the company's brand logo.
-5. **Back Navigation**: Intercepts physical back button presses to navigate backward inside the WebView history.
+1. **WebView Wrapper**: Integrates the Nexo Chat Next.js web application directly inside a responsive Flutter WebView container.
+2. **WebRTC Integration**: Automatically requests and grants camera/microphone permissions for voice & video call capabilities.
+3. **Background Socket Service**: Leverages `flutter_background_service` and `socket_io_client` to connect to the backend socket, listen for messages and calls, and trigger native notifications even when the app is in the background.
+4. **App Launcher Icon**: Preserves original custom circular and square launcher icons (`ic_launcher.png` and `ic_launcher_round.png`).
+5. **Back Navigation**: Intercepts physical back button presses using `PopScope` to navigate backward inside the WebView history.
+6. **Pull to Refresh**: Includes a gesture-controlled refresh indicator that triggers `controller.reload()` when swiped at the top of the page.
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- [Android Studio (Hedgehog or newer)](https://developer.android.com/studio)
-- Android SDK 34 (API level 34) installed
+- [Flutter SDK (3.0.0 or newer)](https://docs.flutter.dev/get-started/install)
+- [Android Studio](https://developer.android.com/studio) or VS Code with Flutter Extension installed.
+- Android SDK 34 (API level 34)
 
-### Opening & Running the Project
-1. Open **Android Studio**.
-2. Select **File > Open** and select this directory (`d:\projects\mobile`).
-3. Allow Gradle to sync and download the dependencies.
-4. Run the project on an **Android Emulator** or a real device connected via USB.
+### Running the Project
+1. Open a terminal in this directory (`d:\projects\mobile`).
+2. Run `flutter pub get` to fetch the dependencies.
+3. Connect an Android Device via USB (with Developer Options & USB Debugging enabled) or start an Android Emulator.
+4. Run the application:
+   ```bash
+   flutter run
+   ```
 
 ### Development Configuration
-By default, the WebView is configured to load:
-```kotlin
-val appUrl = "https://www.nexochat.in" // Production hosted URL
-```
-If you are running the app on a real Android device, make sure your device is connected to the same Wi-Fi network and change this IP address to your computer's local IP address (e.g., `http://192.168.1.100:3000`). For production, replace it with your public URL.
+By default, the WebView is configured to load the production URL:
+`https://www.nexochat.in`
+
+If you are running the app on a local emulator, make sure your local backend dev server is running and update the URL configuration in `lib/main.dart` or `lib/socket_service.dart` if needed.

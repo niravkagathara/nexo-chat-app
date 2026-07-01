@@ -27,7 +27,17 @@ export default function LandingPage() {
 
     // 2. Check saved theme
     localStorage.setItem('nexo_theme', 'light');
-  }, []);
+
+    // 3. Bypass landing page inside WebView mobile app
+    const isMobileApp = typeof window !== 'undefined' && navigator.userAgent.includes('NexoChatMobile');
+    if (isMobileApp) {
+      if (token && userStr) {
+        router.replace('/chat');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [router]);
 
   // Sync background color to document body to avoid white/dark space issues below footer
   useEffect(() => {
@@ -488,6 +498,91 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Download Clients Section */}
+        <section id="download" className={`py-20 border-t transition-colors duration-300 ${theme === 'dark' ? 'bg-[#050711] border-slate-900' : 'bg-slate-50 border-slate-200'}`}>
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block mb-3">Download Apps</span>
+              <h2 className={`text-3xl md:text-5xl font-extrabold tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                Get NexoChat for all your devices
+              </h2>
+              <p className={`text-base ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                Keep conversations going wherever you work. Access instant chat channels, files, and high-quality voice/video calls.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Android Card */}
+              <div className={`rounded-3xl border p-8 flex flex-col justify-between transition shadow-sm hover:shadow-md hover:scale-[1.01] duration-300 ${
+                theme === 'dark' ? 'border-slate-800 bg-slate-900/35 hover:bg-slate-900/50' : 'border-slate-200 bg-white hover:bg-slate-50/50'
+              }`}>
+                <div>
+                  <div className="w-20 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-6 font-extrabold text-xs">
+                    Android
+                  </div>
+                  <h3 className={`text-xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Android Client</h3>
+                  <p className={`text-sm leading-relaxed mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Install the native Android WebView wrapper app for full background notifications, and auto WebRTC permissions.
+                  </p>
+                </div>
+                <a
+                  href="/nexo-chat-mobile.apk"
+                  download
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition active:scale-95"
+                >
+                  <Download size={15} />
+                  Download Android APK
+                </a>
+              </div>
+
+              {/* iOS Card */}
+              <div className={`rounded-3xl border p-8 flex flex-col justify-between transition shadow-sm hover:shadow-md hover:scale-[1.01] duration-300 ${
+                theme === 'dark' ? 'border-slate-800 bg-slate-900/35 hover:bg-slate-900/50' : 'border-slate-200 bg-white hover:bg-slate-50/50'
+              }`}>
+                <div>
+                  <div className="w-20 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mb-6 font-extrabold text-xs">
+                    iOS
+                  </div>
+                  <h3 className={`text-xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>iOS Client</h3>
+                  <p className={`text-sm leading-relaxed mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Run NexoChat as a native PWA shortcut on your home screen or download the direct sideload bundle installer.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowIosModal(true)}
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 shadow-md shadow-rose-600/20 transition active:scale-95 cursor-pointer"
+                >
+                  <Download size={15} />
+                  Install for iOS
+                </button>
+              </div>
+
+              {/* Windows Card */}
+              <div className={`rounded-3xl border p-8 flex flex-col justify-between transition shadow-sm hover:shadow-md hover:scale-[1.01] duration-300 ${
+                theme === 'dark' ? 'border-slate-800 bg-slate-900/35 hover:bg-slate-900/50' : 'border-slate-200 bg-white hover:bg-slate-50/50'
+              }`}>
+                <div>
+                  <div className="w-20 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-6 font-extrabold text-xs">
+                    Windows
+                  </div>
+                  <h3 className={`text-xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Windows Desktop</h3>
+                  <p className={`text-sm leading-relaxed mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Use the full Electron-powered desktop application with dedicated notifications, window framing, and startup configuration.
+                  </p>
+                </div>
+                <a
+                  href="/nexo-chat-desktop.zip"
+                  download
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-md shadow-blue-600/20 transition active:scale-95"
+                >
+                  <Download size={15} />
+                  Download for Windows
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div>
 
       {/* Footer (Light Theme styled in light mode, Dark Theme in dark mode) */}
@@ -582,6 +677,22 @@ export default function LandingPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+
+            {/* Direct Download option */}
+            <div className="mb-6 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 flex flex-col gap-2">
+              <h4 className="font-bold text-indigo-700 dark:text-indigo-400 text-xs uppercase tracking-wider">Direct Sideload Build (.IPA)</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+                If you have AltStore, TrollStore, or a developer profile installed, download the direct installer build:
+              </p>
+              <a
+                href="/nexo-chat-mobile.ipa"
+                download
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer active:scale-95"
+              >
+                <Download size={13} />
+                Download iOS App (.IPA)
+              </a>
             </div>
 
             {/* Instruction Steps */}
