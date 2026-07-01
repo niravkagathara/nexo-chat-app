@@ -19,6 +19,12 @@ yarn-error.log*
 *.exe
 *.zip
 
+# Allow specific builds to be committed and deployed via frontend
+!frontend/public/*.apk
+!frontend/public/*.zip
+!frontend/public/*.exe
+!frontend/public/*.ipa
+
 # Flutter / Dart build artifacts
 mobile/.dart_tool/
 mobile/build/
