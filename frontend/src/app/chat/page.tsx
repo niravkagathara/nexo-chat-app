@@ -2854,7 +2854,7 @@ export default function ChatPage() {
                 const initials = msg.user.avatarUrl || getInitials(msg.user.name);
 
                 // Read Receipts logic: Check if other participants read this message
-                const otherParticipants = activeRoom.participants?.filter((p: any) => p.userId !== currentUser?.id) || [];
+                const otherParticipants = activeRoom.participants?.filter((p: any) => p.userId !== msg.userId) || [];
                 const isReadByOthers = otherParticipants.length > 0 && otherParticipants.some((p: any) => p.lastReadAt && new Date(p.lastReadAt) >= new Date(msg.createdAt));
 
                 const isCallStatus = msg.content.startsWith('📞 Video call');
@@ -2915,7 +2915,7 @@ export default function ChatPage() {
                           <span>
                             {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
-                          {isMe && !msg.isDeleted && (() => {
+                          {!msg.isDeleted && (isMe || activeRoom.isGroup) && (() => {
                             const seenBy = otherParticipants.filter((p: any) => p.lastReadAt && new Date(p.lastReadAt) >= new Date(msg.createdAt));
                             const remaining = otherParticipants.filter((p: any) => !p.lastReadAt || new Date(p.lastReadAt) < new Date(msg.createdAt));
                             return (
