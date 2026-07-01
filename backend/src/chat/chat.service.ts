@@ -179,9 +179,11 @@ export class ChatService {
         attachments: true,
         reactions: {
           include: {
-            message: {
+            user: {
               select: {
-                userId: true,
+                id: true,
+                name: true,
+                avatarUrl: true,
               },
             },
           },
@@ -229,7 +231,17 @@ export class ChatService {
           },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
         parent: {
           include: {
             user: {
@@ -258,7 +270,17 @@ export class ChatService {
           select: { id: true, name: true, email: true, avatarUrl: true },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
         parent: {
           include: {
             user: { select: { id: true, name: true } },
@@ -290,7 +312,17 @@ export class ChatService {
           select: { id: true, name: true, email: true, avatarUrl: true },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
         parent: {
           include: {
             user: { select: { id: true, name: true } },
@@ -486,18 +518,24 @@ export class ChatService {
   async toggleReaction(userId: number, messageId: number, emoji: string) {
     const existing = await this.prisma.reaction.findUnique({
       where: {
-        userId_messageId_emoji: {
+        userId_messageId: {
           userId,
           messageId,
-          emoji,
         },
       },
     });
 
     if (existing) {
-      await this.prisma.reaction.delete({
-        where: { id: existing.id },
-      });
+      if (existing.emoji === emoji) {
+        await this.prisma.reaction.delete({
+          where: { id: existing.id },
+        });
+      } else {
+        await this.prisma.reaction.update({
+          where: { id: existing.id },
+          data: { emoji },
+        });
+      }
     } else {
       await this.prisma.reaction.create({
         data: {
@@ -510,6 +548,15 @@ export class ChatService {
 
     return this.prisma.reaction.findMany({
       where: { messageId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
     });
   }
 

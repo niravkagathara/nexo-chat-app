@@ -3165,24 +3165,53 @@ export default function ChatPage() {
 
                           {/* Reactions */}
                           {msg.reactions && msg.reactions.length > 0 && !msg.isDeleted && (
-                            <div className={`flex flex-wrap gap-1 mt-2 ${isMe ? 'justify-end' : ''}`}>
+                            <div className={`flex flex-wrap gap-1.5 mt-2 ${isMe ? 'justify-end' : ''}`}>
                               {Object.entries(
                                 msg.reactions.reduce((acc: any, curr: any) => {
                                   acc[curr.emoji] = (acc[curr.emoji] || 0) + 1;
                                   return acc;
                                 }, {})
-                              ).map(([emoji, count]: [string, any]) => (
-                                <button
-                                  key={emoji}
-                                  onClick={() => handleAddReaction(msg.id, emoji)}
-                                  className={`px-2 py-0.5 rounded-full text-xs font-bold border transition cursor-pointer ${msg.reactions.some((r: any) => r.userId === currentUser.id && r.emoji === emoji)
-                                    ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
-                                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                                    }`}
-                                >
-                                  {emoji} <span className="ml-0.5 text-[10px] font-normal">{count}</span>
-                                </button>
-                              ))}
+                              ).map(([emoji, count]: [string, any]) => {
+                                const reactingUsers = msg.reactions
+                                  .filter((r: any) => r.emoji === emoji)
+                                  .map((r: any) => r.user)
+                                  .filter(Boolean);
+
+                                return (
+                                  <div key={emoji} className="relative group/reaction">
+                                    <button
+                                      onClick={() => handleAddReaction(msg.id, emoji)}
+                                      className={`px-2 py-0.5 rounded-full text-xs font-bold border transition cursor-pointer flex items-center gap-1 ${
+                                        msg.reactions.some((r: any) => r.userId === currentUser.id && r.emoji === emoji)
+                                          ? 'bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-800 dark:text-indigo-300'
+                                          : 'bg-slate-50 border-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-800 dark:hover:bg-slate-800 dark:text-slate-300'
+                                      }`}
+                                    >
+                                      <span>{emoji}</span>
+                                      <span className="text-[10px] font-normal">{count}</span>
+                                    </button>
+
+                                    {/* Tooltip listing who reacted */}
+                                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white text-[11px] rounded-lg px-2.5 py-1.5 opacity-0 pointer-events-none group-hover/reaction:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 shadow-xl border border-slate-700/50 flex flex-col gap-1">
+                                      <span className="font-semibold text-slate-300 border-b border-slate-700/50 pb-0.5 mb-0.5">
+                                        Reacted by:
+                                      </span>
+                                      {reactingUsers.map((u: any) => (
+                                        <div key={u.id} className="flex items-center gap-1.5">
+                                          {u.avatarUrl ? (
+                                            <img src={u.avatarUrl} className="w-3.5 h-3.5 rounded-full object-cover" alt="" />
+                                          ) : (
+                                            <div className="w-3.5 h-3.5 rounded-full bg-slate-700 flex items-center justify-center text-[7px] font-bold text-slate-200">
+                                              {u.name.charAt(0).toUpperCase()}
+                                            </div>
+                                          )}
+                                          <span>{u.name}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>

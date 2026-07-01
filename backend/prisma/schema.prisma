@@ -21,6 +21,7 @@ model User {
   createdAt         DateTime      @default(now())
   messages          Message[]
   rooms             Participant[]
+  reactions         Reaction[]
 }
 
 model Room {
@@ -85,8 +86,9 @@ model Reaction {
   userId    Int
   messageId Int
   message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, messageId, emoji])
+  @@unique([userId, messageId])
 }
 
 model CallSession {
