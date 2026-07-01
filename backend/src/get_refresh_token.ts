@@ -7,7 +7,7 @@ import * as fs from 'fs';
 
 dotenv.config();
 
-const PORT = 3001;
+const PORT = 3000;
 const PATH = '/auth/google/callback';
 const REDIRECT_URI = `http://localhost:${PORT}${PATH}`;
 
@@ -55,7 +55,7 @@ async function main() {
           console.log('\nCopy the following Refresh Token and add it to your backend .env file:\n');
           console.log(`GDRIVE_REFRESH_TOKEN="${tokens.refresh_token}"`);
           console.log('\n=========================================\n');
-          
+
           // Append/Update directly in .env
           const envPath = path.join(process.cwd(), '.env');
           if (fs.existsSync(envPath)) {

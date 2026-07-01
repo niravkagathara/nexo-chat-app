@@ -3,7 +3,7 @@
 
 const http = require('http');
 
-const API = 'http://localhost:3001';
+const API = 'http://localhost:3000';
 const email = process.argv[2] || 'niravkagathara4@gmail.com';
 const password = process.argv[3] || 'admin123';
 
@@ -12,7 +12,7 @@ function post(path, body, token) {
     const bodyStr = JSON.stringify(body);
     const opts = {
       hostname: 'localhost',
-      port: 3001,
+      port: 3000,
       path,
       method: 'POST',
       headers: {

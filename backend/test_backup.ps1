@@ -3,7 +3,7 @@ param(
     [string]$Password = "admin123"
 )
 
-$API = "http://localhost:3001"
+$API = "http://localhost:3000"
 Write-Host ""
 Write-Host "Logging in as: $Email"
 
