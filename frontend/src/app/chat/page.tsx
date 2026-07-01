@@ -110,6 +110,9 @@ export default function ChatPage() {
   // Mobile/Tap Read Receipt state
   const [openReceiptMessageId, setOpenReceiptMessageId] = useState<number | null>(null);
 
+  // Mobile/Tap active action menu state
+  const [activeMessageActionId, setActiveMessageActionId] = useState<number | null>(null);
+
   // Extended Feature States
   const [searchQuery, setSearchQuery] = useState('');
   const [replyToMessage, setReplyToMessage] = useState<any>(null);
@@ -151,6 +154,7 @@ export default function ChatPage() {
   useEffect(() => {
     const handleGlobalClick = () => {
       setOpenReceiptMessageId(null);
+      setActiveMessageActionId(null);
     };
     window.addEventListener('click', handleGlobalClick);
     return () => window.removeEventListener('click', handleGlobalClick);
@@ -3002,12 +3006,20 @@ export default function ChatPage() {
                           </div>
                         )}
 
-                        <div className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm relative group transition-colors duration-250 ${msg.isDeleted
-                          ? 'bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-800 rounded-tl-none italic'
-                          : isMe
-                            ? 'bg-indigo-600 dark:bg-indigo-600 text-white rounded-tr-none'
-                            : 'bg-white dark:bg-[#0b0f19] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-tl-none'
-                          }`}>
+                        <div 
+                          className={`rounded-2xl px-4 py-2.5 text-sm shadow-sm relative group transition-colors duration-250 cursor-pointer ${msg.isDeleted
+                            ? 'bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-800 rounded-tl-none italic'
+                            : isMe
+                              ? 'bg-indigo-600 dark:bg-indigo-600 text-white rounded-tr-none'
+                              : 'bg-white dark:bg-[#0b0f19] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-tl-none'
+                            }`}
+                          onClick={(e) => {
+                            if (!msg.isDeleted) {
+                              e.stopPropagation();
+                              setActiveMessageActionId(activeMessageActionId === msg.id ? null : msg.id);
+                            }
+                          }}
+                        >
 
                           {/* Dynamic edit display or standard message */}
                           {editingMessageId === msg.id ? (
@@ -3060,12 +3072,12 @@ export default function ChatPage() {
                                           src={`${API_URL}${att.fileUrl}`}
                                           alt={att.fileName}
                                           className="max-h-48 w-auto mx-auto object-contain cursor-zoom-in transition group-hover/img:opacity-90"
-                                          onClick={() => window.open(`${API_URL}${att.fileUrl}`, '_blank')}
+                                          onClick={(e) => { e.stopPropagation(); window.open(`${API_URL}${att.fileUrl}`, '_blank'); }}
                                         />
                                         <div className="flex items-center justify-between p-2 bg-slate-100/90 border-t border-slate-250/50 text-[10px] font-bold">
                                           <span className="text-slate-500 truncate max-w-[140px]" title={att.fileName}>{att.fileName}</span>
                                           <button
-                                            onClick={() => handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName)}
+                                            onClick={(e) => { e.stopPropagation(); handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName); }}
                                             className="flex items-center gap-1 text-indigo-650 hover:text-indigo-800 transition cursor-pointer font-extrabold"
                                             title="Download Image"
                                           >
@@ -3088,7 +3100,8 @@ export default function ChatPage() {
                                         </div>
                                         <div className="flex gap-2 pt-1.5 border-t border-slate-200/20">
                                           <button
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                              e.stopPropagation();
                                               setSelectedPdfUrl(`${API_URL}${att.fileUrl}`);
                                               setSelectedPdfName(att.fileName);
                                               setShowPdfModal(true);
@@ -3102,7 +3115,7 @@ export default function ChatPage() {
                                             Preview PDF
                                           </button>
                                           <button
-                                            onClick={() => handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName)}
+                                            onClick={(e) => { e.stopPropagation(); handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName); }}
                                             className={`py-1.5 px-2.5 rounded-lg font-bold transition text-center text-[10px] cursor-pointer ${
                                               isMe 
                                                 ? 'bg-indigo-600 hover:bg-indigo-500 text-white' 
@@ -3125,7 +3138,7 @@ export default function ChatPage() {
                                         </div>
                                         <div className="flex gap-1.5 shrink-0">
                                           <button
-                                            onClick={() => window.open(`${API_URL}${att.fileUrl}`, '_blank')}
+                                            onClick={(e) => { e.stopPropagation(); window.open(`${API_URL}${att.fileUrl}`, '_blank'); }}
                                             className={`px-2 py-1 rounded-lg font-bold transition cursor-pointer text-[10px] ${
                                               isMe ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-white border border-slate-200 text-slate-850 hover:bg-slate-100'
                                             }`}
@@ -3133,7 +3146,7 @@ export default function ChatPage() {
                                             Open
                                           </button>
                                           <button
-                                            onClick={() => handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName)}
+                                            onClick={(e) => { e.stopPropagation(); handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName); }}
                                             className={`p-1 px-1.5 rounded-lg font-bold transition cursor-pointer text-[10px] ${
                                               isMe ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-white border border-slate-200 text-slate-855 hover:bg-slate-100'
                                             }`}
@@ -3176,8 +3189,16 @@ export default function ChatPage() {
 
                         {/* Float Action Menu (Emoji, Edit, Delete, Reply, Copy) */}
                         {!msg.isDeleted && (
-                          <div className={`opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition duration-150 absolute top-[-15px] flex bg-white border border-slate-200 shadow-md rounded-full px-2.5 py-1 gap-2 z-10 ${isMe ? 'left-4' : 'right-4'
-                            }`}>
+                          <div 
+                            className={`transition duration-150 absolute top-[-15px] bg-white border border-slate-200 shadow-md rounded-full px-2.5 py-1 gap-2 z-10 ${
+                              isMe ? 'left-4' : 'right-4'
+                            } ${
+                              activeMessageActionId === msg.id 
+                                ? 'flex opacity-100 pointer-events-auto' 
+                                : 'hidden lg:group-hover:flex lg:opacity-0 lg:group-hover:opacity-100 pointer-events-none lg:group-hover:pointer-events-auto'
+                            }`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {['👍', '🔥', '❤️', '👏'].map((emoji) => (
                               <button
                                 key={emoji}
