@@ -102,6 +102,14 @@ export default function ChatPage() {
   const [editStatusMsg, setEditStatusMsg] = useState('');
   const [showPwd, setShowPwd] = useState(false);
 
+  // PDF Preview Modal States
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState('');
+  const [selectedPdfName, setSelectedPdfName] = useState('');
+
+  // Mobile/Tap Read Receipt state
+  const [openReceiptMessageId, setOpenReceiptMessageId] = useState<number | null>(null);
+
   // Extended Feature States
   const [searchQuery, setSearchQuery] = useState('');
   const [replyToMessage, setReplyToMessage] = useState<any>(null);
@@ -140,6 +148,14 @@ export default function ChatPage() {
     document.body.style.backgroundColor = '#f1f5f9';
   }, []);
 
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setOpenReceiptMessageId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   const toggleTheme = () => {
     // Light mode only
   };
@@ -150,6 +166,10 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const isTypingRef = useRef(false);
+  const inCallRef = useRef(false);
+  useEffect(() => {
+    inCallRef.current = inCall;
+  }, [inCall]);
   const typingTimeoutRef = useRef<any>(null);
   const ringtoneAudioRef = useRef<any>(null);
   const ringtoneTimeoutRef = useRef<any>(null);
@@ -826,8 +846,10 @@ export default function ChatPage() {
     // WebRTC calling signal listener
     socket.on('videoCallSignal', (data: any) => {
       if (data.senderId !== currentUser.id) {
+        if (data.targetUserId && data.targetUserId !== currentUser.id) return;
+
         if (data.type === 'offer') {
-          if (!inCall) {
+          if (!inCallRef.current) {
             setIncomingCall(data);
             setCallRoomId(data.roomId);
             if (data.callType) {
@@ -850,6 +872,15 @@ export default function ChatPage() {
                 });
               }
             }
+          } else {
+            // Already in a call, notify caller with busy signal
+            socket.emit('videoCallSignal', {
+              roomId: data.roomId,
+              senderId: currentUser.id,
+              senderName: currentUser.name,
+              targetUserId: data.senderId,
+              type: 'busy',
+            });
           }
         } else if (data.type === 'hangup') {
           setIncomingCall((prev: any) => {
@@ -1183,6 +1214,24 @@ export default function ChatPage() {
     };
 
     xhr.send(formData);
+  };
+
+  const handleDownloadFile = async (fileUrl: string, fileName: string) => {
+    try {
+      const res = await fetch(fileUrl);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed, opening in new tab instead:', err);
+      window.open(fileUrl, '_blank');
+    }
   };
 
   // 7. Toggle Reaction
@@ -2894,13 +2943,32 @@ export default function ChatPage() {
                             const seenBy = otherParticipants.filter((p: any) => p.lastReadAt && new Date(p.lastReadAt) >= new Date(msg.createdAt));
                             const remaining = otherParticipants.filter((p: any) => !p.lastReadAt || new Date(p.lastReadAt) < new Date(msg.createdAt));
                             return (
-                              <div className="relative group/receipt cursor-help flex items-center">
+                              <div 
+                                className="relative group/receipt cursor-pointer flex items-center"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenReceiptMessageId(openReceiptMessageId === msg.id ? null : msg.id);
+                                }}
+                              >
                                 <CheckCheck size={14} className={isReadByOthers ? "text-indigo-500 font-extrabold" : "text-slate-400"} />
                                 
                                 {/* Custom Read Receipts Hover Card */}
-                                <div className="absolute right-0 bottom-full mb-1 w-64 bg-slate-900/95 dark:bg-slate-955/95 backdrop-blur-sm text-white text-[11px] rounded-xl p-2.5 shadow-2xl border border-slate-800 z-50 hidden group-hover/receipt:block pointer-events-none transition-all duration-200">
-                                  <div className="font-extrabold text-slate-400 mb-1 border-b border-slate-850 pb-1 uppercase tracking-wider text-[9px]">
-                                    Message Status
+                                <div className={`absolute right-0 bottom-full mb-1 w-64 bg-slate-900/95 dark:bg-slate-955/95 backdrop-blur-sm text-white text-[11px] rounded-xl p-2.5 shadow-2xl border border-slate-800 z-50 transition-all duration-200 ${
+                                  openReceiptMessageId === msg.id ? 'block' : 'hidden group-hover/receipt:block'
+                                }`}>
+                                  <div className="flex justify-between items-center font-extrabold text-slate-400 mb-1 border-b border-slate-850 pb-1 uppercase tracking-wider text-[9px]">
+                                    <span>Message Status</span>
+                                    {openReceiptMessageId === msg.id && (
+                                      <button 
+                                        className="text-[9px] text-slate-400 hover:text-white px-1 font-bold cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenReceiptMessageId(null);
+                                        }}
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
                                   </div>
                                   <div className="mb-1.5">
                                     <span className="text-emerald-400 font-extrabold block text-[9px] uppercase tracking-wide">Seen by ({seenBy.length}):</span>
@@ -2978,38 +3046,102 @@ export default function ChatPage() {
                               )}
                             </>
                           )}
-
                           {/* Attachments */}
                           {msg.attachments && msg.attachments.length > 0 && !msg.isDeleted && (
                             <div className="mt-3 space-y-2 border-t border-slate-200/20 pt-2 shrink-0">
                               {msg.attachments.map((att: any) => {
                                 const isImg = att.fileType.startsWith('image/');
+                                const isPdf = att.fileType === 'application/pdf' || att.fileName.toLowerCase().endsWith('.pdf');
                                 return (
                                   <div key={att.id} className="mt-1">
                                     {isImg ? (
-                                      <div className="max-w-xs rounded-lg overflow-hidden border border-slate-300/50 shadow-sm mt-1 bg-slate-900">
+                                      <div className="max-w-xs rounded-2xl overflow-hidden border border-slate-200 shadow-sm mt-1 bg-slate-50 relative group/img">
                                         <img
                                           src={`${API_URL}${att.fileUrl}`}
                                           alt={att.fileName}
-                                          className="max-h-48 w-auto mx-auto object-contain cursor-zoom-in"
+                                          className="max-h-48 w-auto mx-auto object-contain cursor-zoom-in transition group-hover/img:opacity-90"
                                           onClick={() => window.open(`${API_URL}${att.fileUrl}`, '_blank')}
                                         />
+                                        <div className="flex items-center justify-between p-2 bg-slate-100/90 border-t border-slate-250/50 text-[10px] font-bold">
+                                          <span className="text-slate-500 truncate max-w-[140px]" title={att.fileName}>{att.fileName}</span>
+                                          <button
+                                            onClick={() => handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName)}
+                                            className="flex items-center gap-1 text-indigo-650 hover:text-indigo-800 transition cursor-pointer font-extrabold"
+                                            title="Download Image"
+                                          >
+                                            <Download size={11} /> Download
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : isPdf ? (
+                                      <div className={`flex flex-col gap-2 p-3 rounded-2xl border text-xs max-w-xs shadow-sm ${
+                                        isMe ? 'bg-indigo-700/90 border-indigo-700 text-white' : 'bg-slate-50 border-slate-205 text-slate-800'
+                                      }`}>
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-9 h-9 bg-rose-500/10 text-rose-500 rounded-xl flex items-center justify-center shrink-0 border border-rose-500/25">
+                                            <FileText size={18} />
+                                          </div>
+                                          <div className="overflow-hidden flex-grow min-w-0">
+                                            <div className="font-bold truncate">{att.fileName}</div>
+                                            <div className={`text-[10px] ${isMe ? 'text-indigo-200' : 'text-slate-400'}`}>{formatBytes(att.fileSize)}</div>
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-2 pt-1.5 border-t border-slate-200/20">
+                                          <button
+                                            onClick={() => {
+                                              setSelectedPdfUrl(`${API_URL}${att.fileUrl}`);
+                                              setSelectedPdfName(att.fileName);
+                                              setShowPdfModal(true);
+                                            }}
+                                            className={`flex-1 py-1.5 rounded-lg font-bold transition text-center text-[10px] cursor-pointer ${
+                                              isMe 
+                                                ? 'bg-indigo-600 hover:bg-indigo-500 text-white' 
+                                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs'
+                                            }`}
+                                          >
+                                            Preview PDF
+                                          </button>
+                                          <button
+                                            onClick={() => handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName)}
+                                            className={`py-1.5 px-2.5 rounded-lg font-bold transition text-center text-[10px] cursor-pointer ${
+                                              isMe 
+                                                ? 'bg-indigo-600 hover:bg-indigo-500 text-white' 
+                                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-2xs'
+                                            }`}
+                                            title="Download PDF"
+                                          >
+                                            <Download size={11} />
+                                          </button>
+                                        </div>
                                       </div>
                                     ) : (
-                                      <div className={`flex items-center gap-3 p-2.5 rounded-xl border text-xs max-w-xs shadow-sm ${isMe ? 'bg-indigo-700 border-indigo-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                                        }`}>
-                                        <FileText size={20} className={isMe ? 'text-indigo-300' : 'text-indigo-600'} />
-                                        <div className="overflow-hidden flex-1">
+                                      <div className={`flex items-center gap-3 p-2.5 rounded-2xl border text-xs max-w-xs shadow-sm ${
+                                        isMe ? 'bg-indigo-700/90 border-indigo-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                                      }`}>
+                                        <FileText size={20} className={isMe ? 'text-indigo-300' : 'text-indigo-650'} />
+                                        <div className="overflow-hidden flex-grow min-w-0">
                                           <div className="font-bold truncate">{att.fileName}</div>
                                           <div className={isMe ? 'text-indigo-200' : 'text-slate-400'}>{formatBytes(att.fileSize)}</div>
                                         </div>
-                                        <button
-                                          onClick={() => window.open(`${API_URL}${att.fileUrl}`, '_blank')}
-                                          className={`px-3 py-1 rounded-lg font-bold transition shrink-0 cursor-pointer ${isMe ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-white border border-slate-200 text-slate-800 hover:bg-slate-100'
+                                        <div className="flex gap-1.5 shrink-0">
+                                          <button
+                                            onClick={() => window.open(`${API_URL}${att.fileUrl}`, '_blank')}
+                                            className={`px-2 py-1 rounded-lg font-bold transition cursor-pointer text-[10px] ${
+                                              isMe ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-white border border-slate-200 text-slate-850 hover:bg-slate-100'
                                             }`}
-                                        >
-                                          Open
-                                        </button>
+                                          >
+                                            Open
+                                          </button>
+                                          <button
+                                            onClick={() => handleDownloadFile(`${API_URL}${att.fileUrl}`, att.fileName)}
+                                            className={`p-1 px-1.5 rounded-lg font-bold transition cursor-pointer text-[10px] ${
+                                              isMe ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-white border border-slate-200 text-slate-855 hover:bg-slate-100'
+                                            }`}
+                                            title="Download File"
+                                          >
+                                            <Download size={11} />
+                                          </button>
+                                        </div>
                                       </div>
                                     )}
                                   </div>
@@ -3884,14 +4016,23 @@ export default function ChatPage() {
                   {sharedFiles.slice(0, 10).map((file) => {
                     const isImg = file.fileType.startsWith('image/');
                     return (
-                      <div key={file.id} className="flex gap-2.5 items-start p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 border border-transparent hover:border-slate-100 dark:hover:border-slate-800/60 transition group">
+                      <div key={file.id} className="flex gap-2.5 items-center p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 border border-transparent hover:border-slate-100 dark:hover:border-slate-800/60 transition group">
                         <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center shrink-0 text-indigo-600 dark:text-indigo-400">
                           {isImg ? <ImageIcon size={16} /> : <FileText size={16} />}
                         </div>
-                        <div className="overflow-hidden flex-1 min-w-0">
+                        <div className="overflow-hidden flex-grow min-w-0">
                           <div
-                            onClick={() => window.open(`${API_URL}${file.fileUrl}`, '_blank')}
-                            className="text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline"
+                            onClick={() => {
+                              const isPdf = file.fileType === 'application/pdf' || file.fileName.toLowerCase().endsWith('.pdf');
+                              if (isPdf) {
+                                setSelectedPdfUrl(`${API_URL}${file.fileUrl}`);
+                                setSelectedPdfName(file.fileName);
+                                setShowPdfModal(true);
+                              } else {
+                                window.open(`${API_URL}${file.fileUrl}`, '_blank');
+                              }
+                            }}
+                            className="text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate"
                             title={file.fileName}
                           >
                             {file.fileName}
@@ -3902,6 +4043,13 @@ export default function ChatPage() {
                             <span className="truncate">{file.message?.user?.name}</span>
                           </div>
                         </div>
+                        <button
+                          onClick={() => handleDownloadFile(`${API_URL}${file.fileUrl}`, file.fileName)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-indigo-650 hover:bg-slate-150 rounded-lg transition shrink-0 cursor-pointer"
+                          title="Download File"
+                        >
+                          <Download size={13} />
+                        </button>
                       </div>
                     );
                   })}
@@ -4492,10 +4640,19 @@ export default function ChatPage() {
                     <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 text-indigo-600">
                       {isImg ? <ImageIcon size={18} /> : <FileText size={18} />}
                     </div>
-                    <div className="overflow-hidden flex-1 min-w-0">
+                    <div className="overflow-hidden flex-grow min-w-0">
                       <div
-                        onClick={() => window.open(`${API_URL}${file.fileUrl}`, '_blank')}
-                        className="text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline"
+                        onClick={() => {
+                          const isPdf = file.fileType === 'application/pdf' || file.fileName.toLowerCase().endsWith('.pdf');
+                          if (isPdf) {
+                            setSelectedPdfUrl(`${API_URL}${file.fileUrl}`);
+                            setSelectedPdfName(file.fileName);
+                            setShowPdfModal(true);
+                          } else {
+                            window.open(`${API_URL}${file.fileUrl}`, '_blank');
+                          }
+                        }}
+                        className="text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline truncate"
                         title={file.fileName}
                       >
                         {file.fileName}
@@ -4506,12 +4663,29 @@ export default function ChatPage() {
                         <span className="truncate">Uploaded by {file.message?.user?.name}</span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => window.open(`${API_URL}${file.fileUrl}`, '_blank')}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition shrink-0 cursor-pointer border border-slate-200"
-                    >
-                      Open
-                    </button>
+                    <div className="flex gap-1.5 shrink-0">
+                      <button
+                        onClick={() => {
+                          const isPdf = file.fileType === 'application/pdf' || file.fileName.toLowerCase().endsWith('.pdf');
+                          if (isPdf) {
+                            setSelectedPdfUrl(`${API_URL}${file.fileUrl}`);
+                            setSelectedPdfName(file.fileName);
+                            setShowPdfModal(true);
+                          } else {
+                            window.open(`${API_URL}${file.fileUrl}`, '_blank');
+                          }
+                        }}
+                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer border border-slate-200"
+                      >
+                        Open
+                      </button>
+                      <button
+                        onClick={() => handleDownloadFile(`${API_URL}${file.fileUrl}`, file.fileName)}
+                        className="px-2.5 py-1.5 bg-indigo-650 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Download size={12} /> Download
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -4577,6 +4751,49 @@ export default function ChatPage() {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 6. PDF PREVIEW MODAL */}
+      {showPdfModal && selectedPdfUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-4xl h-[85vh] overflow-hidden shadow-2xl border border-slate-250 flex flex-col animate-scale-up">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <FileText className="text-rose-500 shrink-0" size={20} />
+                <h3 className="text-sm font-extrabold text-slate-800 truncate" title={selectedPdfName}>
+                  PDF Preview: {selectedPdfName}
+                </h3>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={() => handleDownloadFile(selectedPdfUrl, selectedPdfName)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition cursor-pointer shadow-sm animate-pulse-once"
+                  title="Download PDF"
+                >
+                  <Download size={13} /> Download
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPdfModal(false);
+                    setSelectedPdfUrl('');
+                    setSelectedPdfName('');
+                  }}
+                  className="p-1.5 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-lg text-sm transition cursor-pointer flex items-center justify-center border border-slate-200 bg-white"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            {/* Document Frame */}
+            <div className="flex-1 bg-slate-100 relative">
+              <iframe
+                src={selectedPdfUrl}
+                className="w-full h-full border-0"
+                title="PDF Document Viewer"
+              />
             </div>
           </div>
         </div>

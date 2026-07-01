@@ -822,11 +822,38 @@ export const VideoCall: React.FC<VideoCallProps> = ({
     };
 
     // Connection state changes
-    pc.onconnectionstatechange = () => {
+    pc.onconnectionstatechange = async () => {
       console.log(`Connection state change with ${targetUserName}: ${pc.connectionState}`);
       if (pc.connectionState === 'connected') {
         setCallStatus('Connected');
-      } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        console.warn(`Connection with ${targetUserName} ${pc.connectionState}. Attempting ICE restart...`);
+        try {
+          const offer = await pc.createOffer({ iceRestart: true });
+          await pc.setLocalDescription(offer);
+          socket?.emit('videoCallSignal', {
+            roomId,
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            targetUserId,
+            signal: offer,
+            type: 'offer',
+            callType,
+          });
+        } catch (err) {
+          console.error(`ICE restart failed for ${targetUserName}:`, err);
+          // Fallback timeout to disconnect if it doesn't recover within 6 seconds
+          setTimeout(() => {
+            if (pc.connectionState !== 'connected') {
+              removePeer(targetUserId);
+              if (peerConnectionsRef.current.size === 0) {
+                setCallStatus('Call ended.');
+                onClose();
+              }
+            }
+          }, 6000);
+        }
+      } else if (pc.connectionState === 'closed') {
         removePeer(targetUserId);
         if (peerConnectionsRef.current.size === 0) {
           setCallStatus('Call ended.');
@@ -993,6 +1020,14 @@ export const VideoCall: React.FC<VideoCallProps> = ({
           ...prev,
           [senderId]: data.isScreenSharing,
         }));
+        break;
+
+      case 'busy':
+        setCallStatus(`${senderName} is busy on another call`);
+        stopDialtone();
+        setTimeout(() => {
+          onClose();
+        }, 3000);
         break;
 
       case 'hangup':

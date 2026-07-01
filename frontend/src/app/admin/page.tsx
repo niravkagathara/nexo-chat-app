@@ -966,35 +966,35 @@ export default function AdminDashboard() {
                           <th className="py-4 px-6 text-right">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/50 text-sm">
+                      <tbody className="divide-y divide-slate-100 text-sm">
                         {filteredUsers.length > 0 ? (
                           filteredUsers.map(user => (
-                            <tr key={user.id} className="hover:bg-slate-800/10 transition-colors">
+                            <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
                               <td className="py-4 px-6">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8.5 h-8.5 bg-slate-800 border border-slate-700/60 rounded-full flex items-center justify-center text-xs font-bold text-indigo-400 shadow-sm shrink-0">
+                                  <div className="w-8.5 h-8.5 bg-slate-100 border border-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-indigo-600 shadow-sm shrink-0">
                                     {user.name.substring(0, 2).toUpperCase()}
                                   </div>
                                   <div>
-                                    <span className="font-bold text-white block">{user.name}</span>
+                                    <span className="font-bold text-slate-850 block">{user.name}</span>
                                     <span className="text-[10px] text-slate-500 font-medium block">ID: {user.id}</span>
                                   </div>
                                 </div>
                               </td>
-                              <td className="py-4 px-6 text-slate-300 font-mono text-xs">{user.email}</td>
+                              <td className="py-4 px-6 text-slate-700 font-mono text-xs">{user.email}</td>
                               <td className="py-4 px-6">
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                                   user.role === 'superadmin'
-                                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                    ? 'bg-rose-50 text-rose-600 border-rose-200'
                                     : user.role === 'admin'
-                                    ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-                                    : 'bg-slate-500/10 text-slate-400 border-slate-800'
+                                    ? 'bg-indigo-50 text-indigo-600 border-indigo-200'
+                                    : 'bg-slate-105 text-slate-600 border-slate-200'
                                 }`}>
                                   {user.role}
                                 </span>
                               </td>
-                              <td className="py-4 px-6 text-slate-300 font-mono text-xs">{user.messageCount}</td>
-                              <td className="py-4 px-6 text-slate-400 text-xs">{formatDate(user.createdAt)}</td>
+                              <td className="py-4 px-6 text-slate-700 font-mono text-xs">{user.messageCount}</td>
+                              <td className="py-4 px-6 text-slate-600 text-xs">{formatDate(user.createdAt)}</td>
                               <td className="py-4 px-6 text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   <button
